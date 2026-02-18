@@ -1,8 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useContext } from 'react';
 import api from '../services/api';
 import { Clock } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
 const LiveClock = () => {
+    const { user } = useContext(AuthContext);
     const [currentTime, setCurrentTime] = useState(null);
     const [workDuration, setWorkDuration] = useState(0); // in seconds
     const syncRef = useRef({
@@ -14,23 +16,29 @@ const LiveClock = () => {
     useEffect(() => {
         const syncTime = async () => {
             try {
-                const [timeRes, durationRes] = await Promise.all([
-                    api.get('/api/utils/time'),
-                    api.get('/api/attendance/duration')
-                ]);
-
+                // 1. Fetch Time
+                const timeRes = await api.get('/utils/time');
                 const serverTime = new Date(timeRes.data.serverTime);
 
-                // Sync reference points
                 syncRef.current.serverStartTime = serverTime.getTime();
                 syncRef.current.performanceStartTime = performance.now();
-                syncRef.current.workDurationStart = durationRes.data.totalMilliseconds / 1000;
+
+                // 2. Fetch Duration (Only for employees, or if endpoint works)
+                if (user?.role === 'employee') {
+                    try {
+                        const durationRes = await api.get('/attendance/duration');
+                        syncRef.current.workDurationStart = (durationRes.data.totalMilliseconds || 0) / 1000;
+                    } catch (durErr) {
+                        console.warn('Could not fetch work duration:', durErr.message);
+                    }
+                }
 
                 updateClock();
             } catch (error) {
-                console.error('Failed to sync time/duration:', error);
+                console.error('Failed to sync time:', error);
                 syncRef.current.serverStartTime = Date.now();
                 syncRef.current.performanceStartTime = performance.now();
+                updateClock(); // Still start the clock
             }
         };
 
@@ -56,7 +64,7 @@ const LiveClock = () => {
         const interval = setInterval(updateClock, 1000);
 
         return () => clearInterval(interval);
-    }, []);
+    }, [user?.role]);
 
     const formatDuration = (totalSeconds) => {
         const hours = Math.floor(totalSeconds / 3600);
@@ -82,15 +90,17 @@ const LiveClock = () => {
                 </div>
             </div>
 
-            {/* Work Duration */}
-            <div className="flex items-center gap-3 px-4 py-2 bg-green-50 border border-green-100 rounded-xl shadow-sm">
-                <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest leading-none mb-1">Work Duration</span>
-                    <span className="text-lg font-black text-green-900 font-mono leading-none tracking-tighter">
-                        {formatDuration(workDuration)}
-                    </span>
+            {/* Work Duration - Only show for employees */}
+            {user?.role === 'employee' && (
+                <div className="flex items-center gap-3 px-4 py-2 bg-green-50 border border-green-100 rounded-xl shadow-sm">
+                    <div className="flex flex-col">
+                        <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest leading-none mb-1">Work Duration</span>
+                        <span className="text-lg font-black text-green-900 font-mono leading-none tracking-tighter">
+                            {formatDuration(workDuration)}
+                        </span>
+                    </div>
                 </div>
-            </div>
+            )}
         </div>
     );
 };
