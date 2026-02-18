@@ -433,6 +433,13 @@ const TaskCard = ({ task, onAccept, onDecline, onUpdateProgress }) => {
                                 {task.task_type === 'daily' ? 'Daily' : 'Custom'}
                             </span>
                         )}
+                        {/* Postponed Badge: If task is not completed and has a reason from a previous logout */}
+                        {!isCompleted && !isDeclined && task.reason && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-amber-100 text-amber-700 flex items-center gap-1">
+                                <Clock className="w-2 h-2" />
+                                Postponed
+                            </span>
+                        )}
                     </div>
 
                     {task.description && (
@@ -444,7 +451,7 @@ const TaskCard = ({ task, onAccept, onDecline, onUpdateProgress }) => {
                             <CalendarIcon className="w-3 h-3" />
                             <span>Assigned: {task.assigned_date ? format(parseISO(task.assigned_date), 'MMM dd, yyyy') : 'N/A'}</span>
                         </div>
-                        <div className="flex items-center gap-1">
+                        <div className={`flex items-center gap-1 p-1 px-2 rounded-lg ${!isCompleted && !isDeclined ? 'bg-amber-100 text-amber-800 font-bold' : ''}`}>
                             <Clock className="w-3 h-3" />
                             <span>Due: {task.due_date ? format(parseISO(task.due_date), 'MMM dd, yyyy') : 'N/A'}</span>
                         </div>
@@ -463,6 +470,15 @@ const TaskCard = ({ task, onAccept, onDecline, onUpdateProgress }) => {
                                 Your reason: <span className="font-normal">{task.reason}</span>
                             </p>
                             <p className="text-xs text-orange-500 mt-0.5">Waiting for admin to review your decline.</p>
+                        </div>
+                    )}
+
+                    {/* Postponed reason / Status note from logout */}
+                    {!isCompleted && !isDeclined && task.reason && (
+                        <div className="mt-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
+                            <p className="text-xs text-amber-800 font-medium">
+                                Postponed Status: <span className="font-normal text-amber-700">{task.reason}</span>
+                            </p>
                         </div>
                     )}
 
