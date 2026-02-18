@@ -326,6 +326,9 @@ const EmployeeManagement = () => {
                                                     <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-indigo-50 text-indigo-600">
                                                         {task.task_type === 'daily' ? 'Daily' : 'Custom'}
                                                     </span>
+                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${task.is_self_assigned ? 'bg-purple-100 text-purple-700' : 'bg-cyan-100 text-cyan-700'}`}>
+                                                        {task.is_self_assigned ? 'Self Added' : 'Admin Assigned'}
+                                                    </span>
                                                 </div>
                                                 <p className="text-xs text-gray-500 mt-0.5">
                                                     Employee: <span className="font-semibold text-gray-700">{task.emp_name}</span>
