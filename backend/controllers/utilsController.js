@@ -1,8 +1,9 @@
 // Helper function to get current IST time
 const getISTTime = () => {
     const now = new Date();
-    // Convert to IST by formatting with Asia/Kolkata timezone
-    const istString = now.toLocaleString('en-US', {
+
+    // Use Intl.DateTimeFormat for reliable parsing across environments (Windows/Linux)
+    const formatter = new Intl.DateTimeFormat('en-GB', {
         timeZone: 'Asia/Kolkata',
         year: 'numeric',
         month: '2-digit',
@@ -13,11 +14,18 @@ const getISTTime = () => {
         hour12: false
     });
 
-    // Parse the formatted string and convert to MySQL datetime format
-    const [date, time] = istString.split(', ');
-    const [month, day, year] = date.split('/');
+    const parts = formatter.formatToParts(now);
+    const getPart = (type) => parts.find(p => p.type === type).value;
+
+    const year = getPart('year');
+    const month = getPart('month');
+    const day = getPart('day');
+    const hour = getPart('hour');
+    const minute = getPart('minute');
+    const second = getPart('second');
+
     const formattedDate = `${year}-${month}-${day}`;
-    const formattedDateTime = `${formattedDate} ${time}`;
+    const formattedDateTime = `${formattedDate} ${hour}:${minute}:${second}`;
 
     return {
         date: formattedDate,
