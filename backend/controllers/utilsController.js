@@ -2,30 +2,21 @@
 const getISTTime = () => {
     const now = new Date();
 
-    // Use Intl.DateTimeFormat for reliable parsing across environments (Windows/Linux)
-    const formatter = new Intl.DateTimeFormat('en-GB', {
-        timeZone: 'Asia/Kolkata',
-        year: 'numeric',
-        month: '2-digit',
-        day: '2-digit',
-        hour: '2-digit',
-        minute: '2-digit',
-        second: '2-digit',
-        hour12: false
-    });
+    // Create a date object in IST
+    const istOffset = 5.5 * 60 * 60 * 1000;
+    const istTime = new Date(now.getTime() + istOffset);
 
-    const parts = formatter.formatToParts(now);
-    const getPart = (type) => parts.find(p => p.type === type).value;
-
-    const year = getPart('year');
-    const month = getPart('month');
-    const day = getPart('day');
-    const hour = getPart('hour');
-    const minute = getPart('minute');
-    const second = getPart('second');
+    // Format to YYYY-MM-DD
+    const year = istTime.getUTCFullYear();
+    const month = String(istTime.getUTCMonth() + 1).padStart(2, '0');
+    const day = String(istTime.getUTCDate()).padStart(2, '0');
+    const hours = String(istTime.getUTCHours()).padStart(2, '0');
+    const minutes = String(istTime.getUTCMinutes()).padStart(2, '0');
+    const seconds = String(istTime.getUTCSeconds()).padStart(2, '0');
 
     const formattedDate = `${year}-${month}-${day}`;
-    const formattedDateTime = `${formattedDate} ${hour}:${minute}:${second}`;
+    // Standard ISO 8601 with +05:30 offset for IST
+    const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+05:30`;
 
     return {
         date: formattedDate,

@@ -18,50 +18,43 @@ const employees = [
 const seedEmployees = async () => {
     try {
         await connectDB();
-        console.log('Using standard password: password123 for all employees...');
 
+        // 1. Wipe and Re-seed for maximum reliability
+        console.log('Clearing existing specific employees to ensure fresh hashing...');
+        await Employee.deleteMany({ emp_no: { $in: [...employees.map(e => e.emp_no), 'ADMIN001'] } });
+
+        console.log('Seeding employees with "password123"...');
         for (const empData of employees) {
             const email = `${empData.name}@stackvil.com`;
-            const password = 'password123';
-
-            console.log(`Setting up ${empData.name}...`);
-
-            let employee = await Employee.findOne({ emp_no: empData.emp_no });
-            if (!employee) {
-                employee = new Employee({ emp_no: empData.emp_no });
-            }
-
-            employee.name = empData.name;
-            employee.email = email;
-            employee.password = password; // Pre-save hook will hash this
-            employee.full_name = empData.full_name;
-            employee.role = 'employee';
-            employee.status = 'active';
-            employee.profile_picture = `https://ui-avatars.com/api/?name=${encodeURIComponent(empData.full_name)}&background=random`;
-
+            const employee = new Employee({
+                emp_no: empData.emp_no,
+                name: empData.name,
+                email: email,
+                password: 'password123',
+                full_name: empData.full_name,
+                role: 'employee',
+                status: 'active',
+                profile_picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(empData.full_name)}&background=random`
+            });
             await employee.save();
-            console.log(`✅ ${empData.name} - ID: ${empData.emp_no} is ready.`);
+            console.log(`✅ ${empData.name} (ID: ${empData.emp_no}) seeded.`);
         }
 
-        // Setup Admin
-        console.log('Setting up Admin...');
-        let admin = await Employee.findOne({ emp_no: 'ADMIN001' });
-        if (!admin) {
-            admin = new Employee({ emp_no: 'ADMIN001' });
-        }
-
-        admin.name = 'admin';
-        admin.email = 'admin@stackvil.com';
-        admin.password = 'stackvil';
-        admin.full_name = 'Stackvil Admin';
-        admin.role = 'admin';
-        admin.status = 'active';
-        admin.profile_picture = 'https://ui-avatars.com/api/?name=Admin&background=6366f1&color=fff';
-
+        console.log('Seeding Admin with "stackvil"...');
+        const admin = new Employee({
+            emp_no: 'ADMIN001',
+            name: 'admin',
+            email: 'admin@stackvil.com',
+            password: 'stackvil',
+            full_name: 'Stackvil Admin',
+            role: 'admin',
+            status: 'active',
+            profile_picture: 'https://ui-avatars.com/api/?name=Admin&background=6366f1&color=fff'
+        });
         await admin.save();
-        console.log('✅ Admin (ADMIN001) is ready.');
+        console.log('✅ Admin (ID: ADMIN001) seeded.');
 
-        console.log('\n🚀 PASSWORDS STANDARDIZED!');
+        console.log('\n🚀 SEEDING COMPLETE! All passwords hashed.');
         process.exit();
     } catch (error) {
         console.error('❌ Error seeding:', error.message);

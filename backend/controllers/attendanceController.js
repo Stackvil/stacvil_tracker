@@ -7,12 +7,23 @@ const formatAttendanceRecords = (attendanceRows) => {
     return attendanceRows.map(record => {
         let duration = null;
         if (record.login_time && record.logout_time) {
-            const login = new Date(record.login_time);
-            const logout = new Date(record.logout_time);
-            const diffMs = logout - login;
-            const diffHrs = Math.floor(diffMs / 3600000);
-            const diffMins = Math.floor((diffMs % 3600000) / 60000);
-            duration = `${diffHrs}h ${diffMins}m`;
+            try {
+                const login = new Date(record.login_time);
+                const logout = new Date(record.logout_time);
+
+                if (!isNaN(login.getTime()) && !isNaN(logout.getTime())) {
+                    const diffMs = logout - login;
+                    if (diffMs > 0) {
+                        const diffHrs = Math.floor(diffMs / 3600000);
+                        const diffMins = Math.floor((diffMs % 3600000) / 60000);
+                        duration = `${diffHrs}h ${diffMins}m`;
+                    } else {
+                        duration = "0h 0m";
+                    }
+                }
+            } catch (e) {
+                console.error('Duration calculation error:', e);
+            }
         }
         return {
             id: record._id,
@@ -20,7 +31,7 @@ const formatAttendanceRecords = (attendanceRows) => {
             login_time: record.login_time,
             logout_time: record.logout_time,
             date: record.date,
-            duration
+            duration: duration || (record.login_time && !record.logout_time ? "Running" : "N/A")
         };
     });
 };
