@@ -207,13 +207,46 @@ const ReportTable = ({ reports }) => (
                                     </div>
                                 </td>
                                 <td className="px-5 py-4 text-sm font-medium text-gray-700">
-                                    {r.login_time !== 'N/A' ? r.login_time : <span className="text-red-400 text-xs font-semibold">Absent</span>}
+                                    {r.login_time !== 'N/A' ? (
+                                        <div className="flex flex-col gap-1">
+                                            {r.sessions?.map((s, idx) => (
+                                                <div key={idx} className="flex items-center gap-1">
+                                                    <span className="w-2 h-2 rounded-full bg-green-400"></span>
+                                                    {s.login}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : <span className="text-red-400 text-xs font-semibold">Absent</span>}
                                 </td>
                                 <td className="px-5 py-4 text-sm font-medium text-gray-700">
-                                    {r.logout_time !== 'N/A' ? r.logout_time : r.login_time !== 'N/A' ? <span className="text-amber-500 text-xs font-semibold">Active</span> : '-'}
+                                    {r.login_time !== 'N/A' ? (
+                                        <div className="flex flex-col gap-1">
+                                            {r.sessions?.map((s, idx) => (
+                                                <div key={idx}>
+                                                    {s.logout !== 'N/A' ? (
+                                                        <div className="flex items-center gap-1">
+                                                            <span className="w-2 h-2 rounded-full bg-red-400"></span>
+                                                            {s.logout}
+                                                        </div>
+                                                    ) : <span className="text-amber-500 text-[10px] font-bold uppercase italic">Active</span>}
+                                                </div>
+                                            ))}
+                                        </div>
+                                    ) : '-'}
                                 </td>
                                 <td className="px-5 py-4 text-sm font-medium text-gray-700">
-                                    {r.working_hours === 'Running' ? <span className="text-amber-500 font-semibold text-xs">Running</span> : r.working_hours !== 'N/A' ? r.working_hours : '-'}
+                                    {r.working_hours !== 'N/A' ? (
+                                        <div className="flex flex-col items-start gap-1">
+                                            <span className={`font-bold ${r.working_hours.includes('Active') ? 'text-amber-500' : 'text-indigo-600'}`}>
+                                                {r.working_hours}
+                                            </span>
+                                            {r.sessions?.length > 1 && (
+                                                <span className="text-[10px] text-gray-400 font-bold uppercase">
+                                                    {r.sessions.length} Logins Today
+                                                </span>
+                                            )}
+                                        </div>
+                                    ) : '-'}
                                 </td>
                                 <td className="px-5 py-4 text-sm text-gray-700 max-w-[160px] truncate" title={r.title}>
                                     {r.title !== 'No Task' ? r.title : <span className="text-gray-400 text-xs">No Task</span>}

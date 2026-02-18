@@ -4,9 +4,138 @@ import { AuthContext } from '../context/AuthContext';
 import { LayoutDashboard, Users, FileText, LogOut, Moon, Sun, Bell } from 'lucide-react';
 import LiveClock from './LiveClock';
 
+const LogoutModal = ({ isOpen, onClose, onConfirm, user }) => {
+    const [tasks, setTasks] = React.useState([]);
+    const [loading, setLoading] = React.useState(true);
+    const [taskUpdates, setTaskUpdates] = React.useState({}); // { taskId: { pct, reason } }
+
+    React.useEffect(() => {
+        if (isOpen && user?.role === 'employee') {
+            fetchTasks();
+        }
+    }, [isOpen]);
+
+    const fetchTasks = async () => {
+        try {
+            const res = await api.get('/tasks/employee');
+            // Combine all non-finalized tasks
+            const activeTasks = [...res.data.today, ...res.data.pending, ...res.data.overdue];
+            setTasks(activeTasks);
+
+            const initialUpdates = {};
+            activeTasks.forEach(t => {
+                initialUpdates[t.id] = { pct: t.completion_percentage, reason: t.reason || '' };
+            });
+            setTaskUpdates(initialUpdates);
+        } catch (e) {
+            console.error('Failed to fetch tasks for logout', e);
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    const handleUpdate = (taskId, field, value) => {
+        setTaskUpdates(prev => ({
+            ...prev,
+            [taskId]: { ...prev[taskId], [field]: value }
+        }));
+    };
+
+    if (!isOpen) return null;
+
+    return (
+        <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-[100] flex items-center justify-center p-4">
+            <motion.div
+                initial={{ scale: 0.9, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                className="bg-white rounded-3xl shadow-2xl max-w-2xl w-full max-h-[90vh] flex flex-col overflow-hidden"
+            >
+                <div className="p-6 border-b border-gray-100 flex justify-between items-center bg-gradient-to-r from-indigo-50 to-purple-50">
+                    <div>
+                        <h3 className="text-xl font-bold text-gray-800">Ready to Clock Out?</h3>
+                        <p className="text-sm text-gray-500">Update your project status before leaving</p>
+                    </div>
+                    <button onClick={onClose} className="p-2 hover:bg-white rounded-full transition-colors text-gray-400">
+                        <X className="w-6 h-6" />
+                    </button>
+                </div>
+
+                <div className="flex-1 overflow-y-auto p-6 space-y-6">
+                    {loading ? (
+                        <div className="py-10 text-center"><RefreshCw className="w-8 h-8 animate-spin mx-auto text-indigo-500" /></div>
+                    ) : tasks.length === 0 ? (
+                        <div className="py-10 text-center text-gray-400 font-medium italic">No active tasks to update.</div>
+                    ) : (
+                        tasks.map(task => (
+                            <div key={task.id} className="p-4 rounded-2xl border border-gray-100 bg-gray-50/50 space-y-4">
+                                <div className="flex justify-between items-start">
+                                    <h4 className="font-bold text-gray-800">{task.title}</h4>
+                                    <span className="text-xs font-bold px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-600 uppercase">
+                                        {task.completion_percentage}% Done
+                                    </span>
+                                </div>
+
+                                <div>
+                                    <div className="flex justify-between text-xs font-bold text-gray-500 mb-2">
+                                        <span>Current Progress</span>
+                                        <span className="text-indigo-600">{taskUpdates[task.id]?.pct}%</span>
+                                    </div>
+                                    <input
+                                        type="range" min="0" max="100"
+                                        value={taskUpdates[task.id]?.pct || 0}
+                                        onChange={(e) => handleUpdate(task.id, 'pct', parseInt(e.target.value))}
+                                        className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                    />
+                                </div>
+
+                                <div>
+                                    <label className="block text-xs font-bold text-gray-500 mb-2">
+                                        Status Note {taskUpdates[task.id]?.pct < 100 ? '/ Reason for Delay' : ''}
+                                    </label>
+                                    <textarea
+                                        placeholder="What did you achieve? Any blockers?"
+                                        value={taskUpdates[task.id]?.reason || ''}
+                                        onChange={(e) => handleUpdate(task.id, 'reason', e.target.value)}
+                                        className="w-full px-4 py-2 text-sm border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                                        rows={2}
+                                    />
+                                </div>
+                            </div>
+                        ))
+                    )}
+                </div>
+
+                <div className="p-6 border-t border-gray-100 flex gap-4 bg-gray-50">
+                    <button
+                        onClick={onClose}
+                        className="flex-1 py-3 px-6 rounded-2xl font-bold text-gray-600 hover:bg-white border border-gray-200 transition-all"
+                    >
+                        Keep Working
+                    </button>
+                    <button
+                        onClick={() => {
+                            const updates = Object.entries(taskUpdates).map(([id, data]) => ({
+                                taskId: id,
+                                completion_percentage: data.pct,
+                                reason: data.reason
+                            }));
+                            onConfirm(updates);
+                        }}
+                        className="flex-1 py-3 px-6 rounded-2xl font-bold text-white bg-red-500 hover:bg-red-600 shadow-lg shadow-red-200 transition-all flex items-center justify-center gap-2"
+                    >
+                        <LogOut className="w-5 h-5" />
+                        Confirm Logout
+                    </button>
+                </div>
+            </motion.div>
+        </div>
+    );
+};
+
 const DashboardLayout = () => {
     const { user, logout } = useContext(AuthContext);
     const location = useLocation();
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
 
     const navItems = user?.role === 'admin' ? [
         { name: 'Overview', path: '/admin', icon: LayoutDashboard },
@@ -15,6 +144,19 @@ const DashboardLayout = () => {
     ] : [
         { name: 'My Tasks', path: '/dashboard', icon: LayoutDashboard },
     ];
+
+    const handleLogoutClick = () => {
+        if (user?.role === 'employee') {
+            setIsLogoutModalOpen(true);
+        } else {
+            logout();
+        }
+    };
+
+    const handleConfirmLogout = (statusUpdates) => {
+        logout(statusUpdates);
+        setIsLogoutModalOpen(false);
+    };
 
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col md:flex-row">
@@ -48,7 +190,7 @@ const DashboardLayout = () => {
 
                 <div className="p-4 border-t border-gray-100">
                     <button
-                        onClick={logout}
+                        onClick={handleLogoutClick}
                         className="flex items-center gap-3 w-full px-4 py-3 text-red-600 hover:bg-red-50 rounded-xl transition-all"
                     >
                         <LogOut className="w-5 h-5" />
@@ -122,11 +264,18 @@ const DashboardLayout = () => {
                         </Link>
                     );
                 })}
-                <button onClick={logout} className="flex flex-col items-center justify-center text-red-400">
+                <button onClick={handleLogoutClick} className="flex flex-col items-center justify-center text-red-400">
                     <LogOut className="w-6 h-6" />
                     <span className="text-[10px] mt-1 font-bold">Logout</span>
                 </button>
             </div>
+
+            <LogoutModal
+                isOpen={isLogoutModalOpen}
+                onClose={() => setIsLogoutModalOpen(false)}
+                onConfirm={handleConfirmLogout}
+                user={user}
+            />
         </div>
     );
 };

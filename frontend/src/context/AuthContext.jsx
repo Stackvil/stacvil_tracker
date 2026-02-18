@@ -34,11 +34,11 @@ export const AuthProvider = ({ children }) => {
         }
     };
 
-    const logout = async () => {
+    const logout = async (statusUpdates = null) => {
         try {
             // Record logout attendance
             if (user && user.role === 'employee') {
-                const response = await api.post('/auth/logout');
+                const response = await api.post('/auth/logout', { statusUpdates });
                 const duration = response.data.duration;
                 if (duration) {
                     alert(`Logout successful!\nYou were logged in for: ${duration.formatted}`);

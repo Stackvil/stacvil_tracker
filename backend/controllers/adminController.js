@@ -51,7 +51,7 @@ const getDailyReports = async (req, res) => {
         });
 
         const reports = employees.map(e => {
-            const att = attendances.find(a => a.emp_no === e.emp_no);
+            const empAttendances = attendances.filter(a => a.emp_no === e.emp_no);
             const empTasks = tasks.filter(t => t.emp_no === e.emp_no);
 
             // For simplicity, pick the first task found for that date if multiple exist
@@ -59,13 +59,28 @@ const getDailyReports = async (req, res) => {
 
             const formatTime = (iso) => iso ? new Date(iso).toLocaleTimeString('en-GB') : 'N/A';
 
+            let totalMs = 0;
+            const sessions = empAttendances.map(att => {
+                let durationMs = 0;
+                if (att.login_time && att.logout_time) {
+                    durationMs = new Date(att.logout_time) - new Date(att.login_time);
+                    totalMs += durationMs;
+                }
+                return {
+                    login: formatTime(att.login_time),
+                    logout: formatTime(att.logout_time),
+                    is_active: !att.logout_time
+                };
+            });
+
             let working_hours = 'N/A';
-            if (att) {
-                if (att.logout_time) {
-                    const diffMs = new Date(att.logout_time) - new Date(att.login_time);
-                    const hrs = Math.floor(diffMs / 3600000);
-                    const mins = Math.floor((diffMs % 3600000) / 60000);
+            if (empAttendances.length > 0) {
+                const hasActive = empAttendances.some(a => !a.logout_time);
+                if (totalMs > 0 || !hasActive) {
+                    const hrs = Math.floor(totalMs / 3600000);
+                    const mins = Math.floor((totalMs % 3600000) / 60000);
                     working_hours = `${hrs}:${mins.toString().padStart(2, '0')}:00`;
+                    if (hasActive) working_hours += ' (Active)';
                 } else {
                     working_hours = 'Running';
                 }
@@ -76,8 +91,9 @@ const getDailyReports = async (req, res) => {
                 name: e.name,
                 full_name: e.full_name,
                 profile_picture: e.profile_picture,
-                login_time: formatTime(att?.login_time),
-                logout_time: formatTime(att?.logout_time),
+                login_time: sessions.length > 0 ? sessions[0].login : 'N/A',
+                logout_time: sessions.length > 0 ? sessions[sessions.length - 1].logout : 'N/A',
+                sessions, // Added sessions list
                 title: t.title || 'No Task',
                 status: t.status || 'N/A',
                 completion_percentage: t.completion_percentage || 0,

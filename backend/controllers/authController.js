@@ -79,17 +79,14 @@ const loginEmployee = async (req, res) => {
         const now = istTime.datetime;
 
         // Record login time (don't block login if this fails)
-        // Only set login_time if it doesn't exist for today ($setOnInsert), 
-        // but always ensure logout_time is null for the active session.
+        // Create a NEW record for every login to track multiple sessions in a day
         try {
-            await Attendance.findOneAndUpdate(
-                { emp_no: employee.emp_no, date: today },
-                {
-                    $setOnInsert: { login_time: now },
-                    $set: { logout_time: null }
-                },
-                { upsert: true, new: true }
-            );
+            const attendance = new Attendance({
+                emp_no: employee.emp_no,
+                login_time: now,
+                date: today
+            });
+            await attendance.save();
         } catch (attErr) {
             console.error('[AUTH] Attendance log failed:', attErr.message);
         }
@@ -117,12 +114,39 @@ const loginEmployee = async (req, res) => {
 // @route   POST /api/auth/logout
 const logoutEmployee = async (req, res) => {
     const { emp_no } = req.user;
+    const { statusUpdates } = req.body; // Expecting [{ taskId, completion_percentage, reason }]
 
     try {
         const istTime = getISTTime();
         const nowStr = istTime.datetime;
         const today = istTime.date;
 
+        // 1. Process Task Updates if any
+        if (statusUpdates && Array.isArray(statusUpdates)) {
+            const Task = require('../models/Task');
+            for (const update of statusUpdates) {
+                const { taskId, completion_percentage, reason } = update;
+                const task = await Task.findOne({ _id: taskId, emp_no });
+                if (task) {
+                    const pct = parseInt(completion_percentage);
+                    if (!isNaN(pct)) {
+                        task.completion_percentage = pct;
+                        if (pct === 100) {
+                            task.status = 'completed';
+                            task.completed_date = today;
+                        } else if (pct > 0) {
+                            task.status = 'in_progress';
+                        }
+                    }
+                    if (reason) {
+                        task.reason = reason;
+                    }
+                    await task.save();
+                }
+            }
+        }
+
+        // 2. Find and close the latest active attendance record
         const record = await Attendance.findOne({
             emp_no,
             date: today,
@@ -134,7 +158,7 @@ const logoutEmployee = async (req, res) => {
             record.logout_time = nowStr;
             await record.save();
 
-            // Calculate duration correctly using the new ISO timestamps
+            // Calculate duration correctly
             const loginTime = new Date(record.login_time);
             const logoutTime = new Date(nowStr);
             const diffMs = logoutTime - loginTime;
