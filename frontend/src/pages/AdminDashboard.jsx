@@ -156,7 +156,16 @@ const AdminDashboard = () => {
                                                 {r.logout_time !== 'N/A' ? r.logout_time : r.login_time !== 'N/A' ? <span className="text-amber-500 text-xs font-semibold">Active</span> : '-'}
                                             </td>
                                             <td className="py-3 px-2 text-sm text-gray-700 max-w-[140px] truncate">
-                                                {r.title !== 'No Task' ? r.title : <span className="text-gray-300">—</span>}
+                                                {r.title !== 'No Task' ? (
+                                                    <div className="flex flex-col">
+                                                        <span>{r.title}</span>
+                                                        {r.is_self_assigned && (
+                                                            <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider w-fit mt-0.5">
+                                                                Employee Added
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                ) : <span className="text-gray-300">—</span>}
                                             </td>
                                             <td className="py-3 px-2">
                                                 {s ? (
