@@ -10,6 +10,22 @@ const getEmployeeTasks = async (req, res) => {
         const istTime = getISTTime();
         const today = istTime.date;
 
+        // Auto-carry over incomplete daily tasks
+        await Task.updateMany(
+            {
+                emp_no,
+                task_type: 'daily',
+                due_date: { $lt: today },
+                status: { $in: ['pending', 'in_progress'] }
+            },
+            {
+                $set: {
+                    assigned_date: today,
+                    due_date: today
+                }
+            }
+        );
+
         const tasks = await Task.find({ emp_no }).sort({ due_date: 1 });
 
         const normalizedTasks = tasks.map(t => {
