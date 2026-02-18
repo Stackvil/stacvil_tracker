@@ -43,11 +43,16 @@ const loginEmployee = async (req, res) => {
     try {
         const employee = await Employee.findOne({ emp_no });
         if (!employee) {
+            console.log(`Login failed: Employee ${emp_no} not found`);
             return res.status(401).json({ message: 'Invalid Employee ID' });
         }
 
+        console.log(`Comparing password for ${emp_no}...`);
         const isMatch = await employee.comparePassword(password);
+        console.log(`Match result: ${isMatch}`);
+
         if (!isMatch) {
+            console.log(`Login failed: Password mismatch for ${emp_no}`);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
