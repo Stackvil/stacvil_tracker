@@ -83,14 +83,31 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [] }) => {
                                     `}
                                 >
                                     <span className="text-sm font-bold">{format(day, 'd')}</span>
-                                    <div className="flex gap-0.5 mt-1">
-                                        {hasAttendance && (
-                                            <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-indigo-400'}`}></div>
-                                        )}
-                                        {hasTasks && (
-                                            <div className={`w-1 h-1 rounded-full ${isSelected ? 'bg-white' : 'bg-emerald-400'}`}></div>
+
+                                    {/* Task Indicators */}
+                                    <div className="flex gap-1 mt-1 px-1 w-full justify-center flex-wrap">
+                                        {dayTasks.slice(0, 4).map((task, i) => {
+                                            const statusColor =
+                                                task.status === 'completed' ? 'bg-green-500' :
+                                                    task.status === 'in_progress' ? 'bg-blue-500' :
+                                                        task.status === 'declined' ? 'bg-red-500' : 'bg-gray-400';
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className={`w-1.5 h-1.5 rounded-full ${statusColor}`}
+                                                    title={`${task.title} - ${task.status}`}
+                                                />
+                                            );
+                                        })}
+                                        {dayTasks.length > 4 && (
+                                            <span className="text-[8px] font-bold text-gray-400">+{dayTasks.length - 4}</span>
                                         )}
                                     </div>
+
+                                    {/* Attendance Dot */}
+                                    {hasAttendance && (
+                                        <div className={`absolute top-1 right-1 w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-white' : 'bg-indigo-400'}`}></div>
+                                    )}
                                 </button>
                             );
                         })}
@@ -145,7 +162,13 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [] }) => {
                                 dayTasks.map((task, idx) => (
                                     <div key={idx} className="p-3 rounded-xl bg-indigo-50/30 border border-indigo-50 space-y-2">
                                         <div className="flex justify-between items-start gap-2">
-                                            <span className="text-xs font-bold text-gray-800 truncate flex-1">{task.title}</span>
+                                            <div className="flex-1 min-w-0">
+                                                <span className="text-xs font-bold text-gray-800 truncate block">{task.title}</span>
+                                                {/* Source Badge */}
+                                                <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold uppercase ${task.is_self_assigned ? 'bg-purple-100 text-purple-700' : 'bg-cyan-100 text-cyan-700'} inline-block mt-1`}>
+                                                    {task.is_self_assigned ? 'Self Added' : 'Admin Assigned'}
+                                                </span>
+                                            </div>
                                             <span className={`text-[10px] px-2 py-0.5 rounded font-bold uppercase ${task.status === 'completed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
                                                 {task.status.replace('_', ' ')}
                                             </span>
