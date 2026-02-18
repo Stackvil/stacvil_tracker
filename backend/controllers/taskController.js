@@ -1,4 +1,4 @@
-const pool = require('../config/db');
+const Task = require('../models/Task');
 const { getISTTime } = require('./utilsController');
 
 // @desc    Get employee tasks grouped by status
@@ -10,61 +10,22 @@ const getEmployeeTasks = async (req, res) => {
         const istTime = getISTTime();
         const today = istTime.date;
 
-        const query = `
-            SELECT 
-                id,
-                emp_no,
-                task_type,
-                assigned_date,
-                due_date,
-                completed_date,
-                title,
-                description,
-                completion_percentage,
-                status,
-                reason,
-                created_at,
-                updated_at,
-                CASE 
-                    WHEN status = 'completed' THEN 'completed'
-                    WHEN status = 'declined' THEN 'declined'
-                    WHEN due_date < ? AND status NOT IN ('completed', 'declined') THEN 'overdue'
-                    WHEN completion_percentage > 0 AND status NOT IN ('completed', 'declined') THEN 'in_progress'
-                    ELSE 'pending'
-                END as calculated_status
-            FROM tasks
-            WHERE emp_no = ?
-            ORDER BY 
-                CASE 
-                    WHEN status = 'completed' THEN 5
-                    WHEN status = 'declined' THEN 4
-                    WHEN due_date < ? AND status NOT IN ('completed', 'declined') THEN 1
-                    WHEN due_date = ? THEN 2
-                    ELSE 3
-                END,
-                due_date ASC
-        `;
+        const tasks = await Task.find({ emp_no }).sort({ due_date: 1 });
 
-        const [tasks] = await pool.execute(query, [today, emp_no, today, today]);
-
-        const toDateStr = (d) => {
-            if (!d) return null;
-            if (typeof d === 'string') return d.substring(0, 10);
-            if (d instanceof Date) {
-                // Use IST locale to avoid UTC offset shifting the date
-                return d.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }); // en-CA gives YYYY-MM-DD
+        const normalizedTasks = tasks.map(t => {
+            let calculated_status = t.status;
+            if (t.status === 'pending' || t.status === 'in_progress') {
+                if (t.due_date < today) {
+                    calculated_status = 'overdue';
+                }
             }
-            return String(d).substring(0, 10);
-        };
+            return {
+                ...t.toObject(),
+                id: t._id,
+                calculated_status
+            };
+        });
 
-        const normalizedTasks = tasks.map(t => ({
-            ...t,
-            assigned_date: toDateStr(t.assigned_date),
-            due_date: toDateStr(t.due_date),
-            completed_date: toDateStr(t.completed_date),
-        }));
-
-        // Group tasks by category
         const groupedTasks = {
             today: normalizedTasks.filter(t => t.due_date === today && !['completed', 'overdue', 'declined'].includes(t.calculated_status)),
             pending: normalizedTasks.filter(t => t.due_date > today && !['completed', 'declined'].includes(t.calculated_status)),
@@ -75,133 +36,74 @@ const getEmployeeTasks = async (req, res) => {
 
         res.json(groupedTasks);
     } catch (error) {
-        console.error('Error fetching employee tasks:', error);
+        console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 };
 
 // @desc    Update task status and completion (employee only)
-// @route   PUT /api/tasks/:id
-// Supports: accept (pending→in_progress), decline (requires reason), update completion_percentage
 const updateTaskStatus = async (req, res) => {
     const { id } = req.params;
     const { emp_no } = req.user;
     const { action, completion_percentage, reason } = req.body;
 
     try {
-        // Verify task belongs to employee
-        const [tasks] = await pool.execute(
-            'SELECT * FROM tasks WHERE id = ? AND emp_no = ?',
-            [id, emp_no]
-        );
-
-        if (tasks.length === 0) {
-            return res.status(404).json({ message: 'Task not found or access denied' });
+        const task = await Task.findOne({ _id: id, emp_no });
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
         }
 
-        const task = tasks[0];
-
-        // Prevent modifying completed or declined tasks
-        if (task.status === 'completed') {
-            return res.status(400).json({ message: 'Cannot modify a completed task' });
+        if (['completed', 'declined'].includes(task.status)) {
+            return res.status(400).json({ message: 'Cannot modify a finalized task' });
         }
-        if (task.status === 'declined') {
-            return res.status(400).json({ message: 'Cannot modify a declined task' });
-        }
-
-        const updateFields = [];
-        const updateValues = [];
 
         if (action === 'accept') {
-            // Employee accepts the task → in_progress
-            updateFields.push('status = ?');
-            updateValues.push('in_progress');
-
+            task.status = 'in_progress';
         } else if (action === 'decline') {
-            // Employee declines the task → requires reason
-            if (!reason || reason.trim() === '') {
-                return res.status(400).json({ message: 'A reason is required when declining a task' });
-            }
-            updateFields.push('status = ?');
-            updateValues.push('declined');
-            updateFields.push('reason = ?');
-            updateValues.push(reason.trim());
-
+            if (!reason) return res.status(400).json({ message: 'Reason required' });
+            task.status = 'declined';
+            task.reason = reason;
         } else if (action === 'update_progress') {
-            // Employee updates completion percentage (only when in_progress)
             if (task.status !== 'in_progress') {
-                return res.status(400).json({ message: 'Accept the task before updating progress' });
-            }
-            if (completion_percentage === undefined) {
-                return res.status(400).json({ message: 'completion_percentage is required' });
+                return res.status(400).json({ message: 'Accept task first' });
             }
             const pct = parseInt(completion_percentage);
             if (isNaN(pct) || pct < 0 || pct > 100) {
-                return res.status(400).json({ message: 'Completion percentage must be between 0 and 100' });
+                return res.status(400).json({ message: 'Invalid percentage' });
             }
-            updateFields.push('completion_percentage = ?');
-            updateValues.push(pct);
-
-            // Auto-complete when 100%
+            task.completion_percentage = pct;
             if (pct === 100) {
-                const istTime = getISTTime();
-                updateFields.push('status = ?');
-                updateValues.push('completed');
-                updateFields.push('completed_date = ?');
-                updateValues.push(istTime.date);
-            } else {
-                updateFields.push('status = ?');
-                updateValues.push('in_progress');
+                task.status = 'completed';
+                task.completed_date = getISTTime().date;
             }
         } else {
-            return res.status(400).json({ message: 'Invalid action. Use: accept, decline, or update_progress' });
+            return res.status(400).json({ message: 'Invalid action' });
         }
 
-        if (updateFields.length === 0) {
-            return res.status(400).json({ message: 'No fields to update' });
-        }
-
-        const updateQuery = `UPDATE tasks SET ${updateFields.join(', ')} WHERE id = ? AND emp_no = ?`;
-        updateValues.push(id, emp_no);
-        await pool.execute(updateQuery, updateValues);
-
-        const [updatedTasks] = await pool.execute('SELECT * FROM tasks WHERE id = ?', [id]);
-
-        res.json({
-            message: 'Task updated successfully',
-            task: updatedTasks[0]
-        });
+        await task.save();
+        res.json({ message: 'Task updated', task });
     } catch (error) {
-        console.error('Error updating task:', error);
+        console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 };
 
 // @desc    Get task history for employee
-// @route   GET /api/tasks/history
 const getTaskHistory = async (req, res) => {
     const { emp_no } = req.user;
-    const { limit = 50, offset = 0 } = req.query;
+    const { limit = 50, skip = 0 } = req.query;
 
     try {
-        const query = `
-            SELECT * FROM tasks
-            WHERE emp_no = ?
-            ORDER BY created_at DESC
-            LIMIT ? OFFSET ?
-        `;
-
-        const [tasks] = await pool.execute(query, [emp_no, parseInt(limit), parseInt(offset)]);
+        const tasks = await Task.find({ emp_no })
+            .sort({ createdAt: -1 })
+            .limit(parseInt(limit))
+            .skip(parseInt(skip));
 
         res.json(tasks);
     } catch (error) {
-        console.error('Error fetching task history:', error);
+        console.error(error);
         res.status(500).json({ message: 'Server error' });
     }
 };
 
-module.exports = {
-    getEmployeeTasks,
-    updateTaskStatus,
-    getTaskHistory
-};
+module.exports = { getEmployeeTasks, updateTaskStatus, getTaskHistory };

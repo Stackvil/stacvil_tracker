@@ -3,14 +3,19 @@ const cors = require('cors');
 const morgan = require('morgan');
 const dotenv = require('dotenv');
 
+const connectDB = require('./config/db');
+const mongoose = require('mongoose');
+
 dotenv.config();
+
+// Connect to Database
+connectDB();
 
 const authRoutes = require('./routes/authRoutes');
 const taskRoutes = require('./routes/taskRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const utilsRoutes = require('./routes/utilsRoutes');
-const pool = require('./config/db');
 
 const app = express();
 
@@ -25,20 +30,17 @@ app.use(morgan('dev'));
 // Health check endpoint
 app.get('/api/health', async (req, res) => {
     try {
-        await pool.execute('SELECT 1');
+        const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
         res.json({
             status: 'ok',
-            database: 'connected',
+            database: dbStatus,
             timestamp: new Date().toISOString()
         });
     } catch (error) {
         res.status(503).json({
             status: 'error',
             database: 'disconnected',
-            error: error.code || 'Unknown error',
-            message: error.code === 'ECONNREFUSED'
-                ? 'MySQL is not running. Please start MySQL service.'
-                : 'Database connection failed',
+            error: error.message,
             timestamp: new Date().toISOString()
         });
     }

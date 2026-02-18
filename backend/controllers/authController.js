@@ -1,5 +1,5 @@
-const pool = require('../config/db');
-const bcrypt = require('bcryptjs');
+const Employee = require('../models/Employee');
+const Attendance = require('../models/Attendance');
 const jwt = require('jsonwebtoken');
 const { getISTTime } = require('./utilsController');
 
@@ -10,31 +10,24 @@ const registerEmployee = async (req, res) => {
 
     try {
         // Check if employee exists
-        const [existingEmp] = await pool.execute('SELECT * FROM employees WHERE emp_no = ? OR email = ?', [emp_no, email]);
-
-        if (existingEmp.length > 0) {
+        const existingEmp = await Employee.findOne({ $or: [{ emp_no }, { email }] });
+        if (existingEmp) {
             return res.status(400).json({ message: 'Employee with this ID or email already exists' });
         }
 
-        // Hash password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(password, salt);
+        // Create employee (Mongoose middleware handles hashing)
+        const employee = new Employee({
+            emp_no,
+            name,
+            email,
+            password,
+            role: role || 'employee'
+        });
 
-        // Insert employee
-        await pool.execute(
-            'INSERT INTO employees (emp_no, name, email, password, role) VALUES (?, ?, ?, ?, ?)',
-            [emp_no, name, email, hashedPassword, role || 'employee']
-        );
-
+        await employee.save();
         res.status(201).json({ message: 'Employee registered successfully' });
     } catch (error) {
         console.error(error);
-        if (error.code === 'ECONNREFUSED') {
-            return res.status(503).json({ message: 'Database connection failed. Please try again later.' });
-        }
-        if (error.code === 'ER_NO_SUCH_TABLE') {
-            return res.status(503).json({ message: 'Database tables not found. Please run: npm run setup-db' });
-        }
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -45,57 +38,37 @@ const loginEmployee = async (req, res) => {
     const { emp_no, password } = req.body;
 
     try {
-        // Check employee
-        const [rows] = await pool.execute('SELECT * FROM employees WHERE emp_no = ?', [emp_no]);
-        const employee = rows[0];
-
+        const employee = await Employee.findOne({ emp_no });
         if (!employee) {
             return res.status(401).json({ message: 'Invalid Employee ID' });
         }
 
-        // Check password
-        const isMatch = await bcrypt.compare(password, employee.password);
+        const isMatch = await employee.comparePassword(password);
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // Create JWT
         const token = jwt.sign(
-            { id: employee.id, emp_no: employee.emp_no, role: employee.role },
+            { id: employee._id, emp_no: employee.emp_no, role: employee.role },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRE }
         );
 
-        // Record login time - Update if today's record exists, otherwise insert new
-        // Get IST time from helper function
         const istTime = getISTTime();
         const today = istTime.date;
         const now = istTime.datetime;
 
-        // Check if attendance record exists for today
-        const [existingAttendance] = await pool.execute(
-            'SELECT id FROM attendance WHERE emp_no = ? AND date = ?',
-            [emp_no, today]
+        // Record login time
+        await Attendance.findOneAndUpdate(
+            { emp_no, date: today },
+            { login_time: now }, // Mongoose handles Date conversion if now is a ISO string or Date
+            { upsert: true, new: true }
         );
-
-        if (existingAttendance.length > 0) {
-            // Update existing record's login_time
-            await pool.execute(
-                'UPDATE attendance SET login_time = ? WHERE emp_no = ? AND date = ?',
-                [now, emp_no, today]
-            );
-        } else {
-            // Insert new attendance record
-            await pool.execute(
-                'INSERT INTO attendance (emp_no, login_time, date) VALUES (?, ?, ?)',
-                [emp_no, now, today]
-            );
-        }
 
         res.json({
             token,
             user: {
-                id: employee.id,
+                id: employee._id,
                 emp_no: employee.emp_no,
                 name: employee.name,
                 role: employee.role,
@@ -104,12 +77,6 @@ const loginEmployee = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        if (error.code === 'ECONNREFUSED') {
-            return res.status(503).json({ message: 'Database connection failed. Please try again later.' });
-        }
-        if (error.code === 'ER_NO_SUCH_TABLE') {
-            return res.status(503).json({ message: 'Database tables not found. Please run: npm run setup-db' });
-        }
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -117,23 +84,22 @@ const loginEmployee = async (req, res) => {
 // @desc    Logout employee
 // @route   POST /api/auth/logout
 const logoutEmployee = async (req, res) => {
-    const { emp_no } = req.user; // From auth middleware
+    const { emp_no } = req.user;
 
     try {
-        // Get IST time from helper function
         const istTime = getISTTime();
         const nowStr = istTime.datetime;
         const today = istTime.date;
 
-        // Get the latest login time for today
-        const [rows] = await pool.execute(
-            'SELECT login_time FROM attendance WHERE emp_no = ? AND date = ? AND logout_time IS NULL ORDER BY login_time DESC LIMIT 1',
-            [emp_no, today]
-        );
+        const record = await Attendance.findOne({
+            emp_no,
+            date: today,
+            logout_time: null
+        }).sort({ login_time: -1 });
 
         let duration = null;
-        if (rows.length > 0) {
-            const loginTime = new Date(rows[0].login_time);
+        if (record) {
+            const loginTime = new Date(record.login_time);
             const diffMs = istTime.timestamp - loginTime;
             const diffHrs = Math.floor(diffMs / 3600000);
             const diffMins = Math.floor((diffMs % 3600000) / 60000);
@@ -142,13 +108,10 @@ const logoutEmployee = async (req, res) => {
                 minutes: diffMins,
                 formatted: `${diffHrs}h ${diffMins}m`
             };
-        }
 
-        // Update logout_time
-        await pool.execute(
-            'UPDATE attendance SET logout_time = ? WHERE emp_no = ? AND date = ? AND logout_time IS NULL ORDER BY login_time DESC LIMIT 1',
-            [nowStr, emp_no, today]
-        );
+            record.logout_time = nowStr;
+            await record.save();
+        }
 
         res.json({
             message: 'Logged out successfully',
@@ -156,12 +119,6 @@ const logoutEmployee = async (req, res) => {
         });
     } catch (error) {
         console.error(error);
-        if (error.code === 'ECONNREFUSED') {
-            return res.status(503).json({ message: 'Database connection failed. Please try again later.' });
-        }
-        if (error.code === 'ER_NO_SUCH_TABLE') {
-            return res.status(503).json({ message: 'Database tables not found. Please run: npm run setup-db' });
-        }
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -170,40 +127,25 @@ const logoutEmployee = async (req, res) => {
 // @route   PUT /api/auth/password
 const changePassword = async (req, res) => {
     const { currentPassword, newPassword } = req.body;
-    const emp_no = req.user.emp_no;
+    const { emp_no } = req.user;
 
     try {
         if (!currentPassword || !newPassword) {
             return res.status(400).json({ message: 'Current password and new password are required' });
         }
 
-        if (newPassword.length < 6) {
-            return res.status(400).json({ message: 'New password must be at least 6 characters long' });
-        }
-
-        // Get current employee
-        const [rows] = await pool.execute('SELECT * FROM employees WHERE emp_no = ?', [emp_no]);
-        const employee = rows[0];
-
+        const employee = await Employee.findOne({ emp_no });
         if (!employee) {
             return res.status(404).json({ message: 'Employee not found' });
         }
 
-        // Verify current password
-        const isMatch = await bcrypt.compare(currentPassword, employee.password);
+        const isMatch = await employee.comparePassword(currentPassword);
         if (!isMatch) {
             return res.status(401).json({ message: 'Current password is incorrect' });
         }
 
-        // Hash new password
-        const salt = await bcrypt.genSalt(10);
-        const hashedPassword = await bcrypt.hash(newPassword, salt);
-
-        // Update password
-        await pool.execute(
-            'UPDATE employees SET password = ? WHERE emp_no = ?',
-            [hashedPassword, emp_no]
-        );
+        employee.password = newPassword; // Mongoose middleware will hash this
+        await employee.save();
 
         res.json({ message: 'Password changed successfully' });
     } catch (error) {
