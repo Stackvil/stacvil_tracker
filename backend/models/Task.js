@@ -45,6 +45,10 @@ const taskSchema = new mongoose.Schema({
     reason: {
         type: String,
         default: null
+    },
+    admin_note: {
+        type: String,
+        default: null
     }
 }, { timestamps: true });
 

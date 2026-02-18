@@ -466,6 +466,16 @@ const TaskCard = ({ task, onAccept, onDecline, onUpdateProgress }) => {
                         </div>
                     )}
 
+                    {/* Admin rejection note shown if decline was rejected */}
+                    {task.admin_note && !isDeclined && !isCompleted && (
+                        <div className="mt-3 p-2 bg-indigo-50 border border-indigo-100 rounded-lg flex items-start gap-2">
+                            <AlertCircle className="w-4 h-4 text-indigo-600 mt-0.5 shrink-0" />
+                            <p className="text-xs text-indigo-700">
+                                <span className="font-bold">Admin Feedback:</span> {task.admin_note}
+                            </p>
+                        </div>
+                    )}
+
                     {/* Progress slider — only for in_progress tasks */}
                     {isInProgress && (
                         <div className="mt-3">

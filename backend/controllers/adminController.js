@@ -244,15 +244,29 @@ const getAdminTasks = async (req, res) => {
     }
 };
 
-// @desc    Admin accepts employee's decline → task is deleted
+// @desc    Admin responds to employee's decline (approve or reject)
 const respondToDecline = async (req, res) => {
     const { id } = req.params;
+    const { action, note } = req.body;
+
     try {
-        const task = await Task.findByIdAndDelete(id);
+        const task = await Task.findById(id);
         if (!task) {
             return res.status(404).json({ message: 'Task not found' });
         }
-        res.json({ message: 'Task removed successfully' });
+
+        if (action === 'approve') {
+            await Task.findByIdAndDelete(id);
+            return res.json({ message: 'Task removed successfully' });
+        } else if (action === 'reject') {
+            task.status = 'pending';
+            task.admin_note = note || 'Decline rejected by admin. Please complete the task.';
+            // Keep the employee's original reason in 'reason' but clear it from being "declined"
+            await task.save();
+            return res.json({ message: 'Decline rejected. Task sent back to employee.', task });
+        } else {
+            return res.status(400).json({ message: 'Invalid action. Use approve or reject.' });
+        }
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });

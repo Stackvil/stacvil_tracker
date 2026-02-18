@@ -10,6 +10,7 @@ router.get('/reports/daily', protect, admin, getDailyReports);
 router.get('/analytics', protect, admin, getAnalytics);
 router.post('/tasks/assign', protect, admin, assignTask);
 router.get('/tasks', protect, admin, getAdminTasks);
+router.post('/tasks/respond/:id', protect, admin, respondToDecline);
 router.delete('/tasks/:id', protect, admin, respondToDecline);
 
 module.exports = router;

@@ -105,14 +105,19 @@ const EmployeeManagement = () => {
         }
     };
 
-    const handleAcceptDecline = async (taskId) => {
+    const [showRejectNoteModal, setShowRejectNoteModal] = useState(null); // taskId
+    const [rejectNote, setRejectNote] = useState('');
+
+    const handleRespondToDecline = async (taskId, action, note = '') => {
         try {
-            await api.delete(`/admin/tasks/${taskId}`);
-            setSuccess('Task removed successfully');
+            await api.post(`/admin/tasks/respond/${taskId}`, { action, note });
+            setSuccess(action === 'approve' ? 'Decline approved and task removed' : 'Decline rejected and task sent back');
+            setShowRejectNoteModal(null);
+            setRejectNote('');
             fetchAdminTasks();
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
-            setError(err.response?.data?.message || 'Failed to remove task');
+            setError(err.response?.data?.message || 'Failed to process request');
         }
     };
 
@@ -348,14 +353,28 @@ const EmployeeManagement = () => {
                                                     </div>
                                                     <span className="text-xs font-bold text-gray-600">{task.completion_percentage}%</span>
                                                 </div>
-                                                {/* Accept decline button */}
+                                                {/* Approve/Reject decline buttons */}
                                                 {task.status === 'declined' && (
-                                                    <button
-                                                        onClick={() => handleAcceptDecline(task.id)}
-                                                        className="text-xs px-3 py-1.5 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-all font-semibold"
-                                                    >
-                                                        Accept Decline
-                                                    </button>
+                                                    <div className="flex gap-2">
+                                                        <button
+                                                            onClick={() => handleRespondToDecline(task.id, 'approve')}
+                                                            className="text-[10px] px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-semibold"
+                                                        >
+                                                            Approve Decline
+                                                        </button>
+                                                        <button
+                                                            onClick={() => setShowRejectNoteModal(task.id)}
+                                                            className="text-[10px] px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all font-semibold"
+                                                        >
+                                                            Reject Decline
+                                                        </button>
+                                                    </div>
+                                                )}
+                                                {task.admin_note && task.status !== 'declined' && (
+                                                    <div className="mt-1 flex items-center gap-1 text-[10px] text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded">
+                                                        <AlertCircle className="w-3 h-3" />
+                                                        Admin Note: {task.admin_note}
+                                                    </div>
                                                 )}
                                             </div>
                                         </div>
@@ -523,6 +542,35 @@ const EmployeeManagement = () => {
                             <div className="flex gap-3 pt-2">
                                 <button onClick={() => setShowDeleteModal(null)} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
                                 <button onClick={() => handleDeleteEmployee(showDeleteModal)} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all">Delete Employee</button>
+                            </div>
+                        </div>
+                    </Modal>
+                )}
+            </AnimatePresence>
+            {/* Reject Decline Note Modal */}
+            <AnimatePresence>
+                {showRejectNoteModal && (
+                    <Modal title="Reject Task Decline" onClose={() => { setShowRejectNoteModal(null); setRejectNote(''); }}>
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-600">
+                                Please provide a reason for rejecting the decline. This will be shown to the employee.
+                            </p>
+                            <textarea
+                                value={rejectNote}
+                                onChange={(e) => setRejectNote(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 outline-none"
+                                placeholder="e.g. This task is priority for project X..."
+                                rows={4}
+                                autoFocus
+                            />
+                            <div className="flex gap-3 pt-2">
+                                <button onClick={() => { setShowRejectNoteModal(null); setRejectNote(''); }} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                                <button
+                                    onClick={() => handleRespondToDecline(showRejectNoteModal, 'reject', rejectNote)}
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all"
+                                >
+                                    Confirm Reject
+                                </button>
                             </div>
                         </div>
                     </Modal>
