@@ -27,5 +27,8 @@ const verifyLogin = async (emp_no, password) => {
     }
 };
 
-// Test one from the list
-verifyLogin('EMP001', '9jv7dsmu');
+// Test both
+(async () => {
+    await verifyLogin('EMP001', 'password123');
+    await verifyLogin('ADMIN001', 'stackvil');
+})();

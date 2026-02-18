@@ -42,7 +42,7 @@ const loginEmployee = async (req, res) => {
     const cleanEmpNo = emp_no?.trim().toUpperCase();
 
     try {
-        console.log(`[LOGIN TRACE] Input ID: "${emp_no}", Cleaned ID: "${cleanEmpNo}"`);
+        console.log(`[AUTH] Login attempt: "${emp_no}" -> "${cleanEmpNo}"`);
 
         const employee = await Employee.findOne({
             $or: [
@@ -52,23 +52,20 @@ const loginEmployee = async (req, res) => {
         });
 
         if (!employee) {
-            console.log(`[LOGIN TRACE] User not found for: "${cleanEmpNo}"`);
+            console.log(`[AUTH] User not found: "${cleanEmpNo}"`);
             return res.status(401).json({ message: 'Invalid Employee ID' });
         }
 
-        console.log(`[LOGIN TRACE] User found: ${employee.emp_no}. Role: ${employee.role}`);
-        console.log(`[LOGIN TRACE] DB Hash prefix: ${employee.password.substring(0, 10)}...`);
-        console.log(`[LOGIN TRACE] Input password length: ${password?.length}`);
-
+        console.log(`[AUTH] Comparing password for ${employee.emp_no}...`);
         const isMatch = await employee.comparePassword(password);
-        console.log(`[LOGIN TRACE] BCrypt Compare Result: ${isMatch}`);
+        console.log(`[AUTH] Match result: ${isMatch}`);
 
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
         if (!process.env.JWT_SECRET) {
-            throw new Error('JWT_SECRET is not defined in environment variables');
+            throw new Error('JWT_SECRET is missing');
         }
 
         const token = jwt.sign(
@@ -81,12 +78,16 @@ const loginEmployee = async (req, res) => {
         const today = istTime.date;
         const now = istTime.datetime;
 
-        // Record login time
-        await Attendance.findOneAndUpdate(
-            { emp_no, date: today },
-            { login_time: now },
-            { upsert: true, new: true }
-        );
+        // Record login time (don't block login if this fails)
+        try {
+            await Attendance.findOneAndUpdate(
+                { emp_no: employee.emp_no, date: today },
+                { login_time: now },
+                { upsert: true, new: true }
+            );
+        } catch (attErr) {
+            console.error('[AUTH] Attendance log failed:', attErr.message);
+        }
 
         res.json({
             token,
@@ -99,11 +100,10 @@ const loginEmployee = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error('Login Error Details:', error);
+        console.error('[AUTH] Login Error:', error);
         res.status(500).json({
             message: 'Server error during login',
-            error: error.message,
-            stack: error.stack
+            error: error.message
         });
     }
 };
