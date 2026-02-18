@@ -27,7 +27,7 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [] }) => {
 
     const getTasksForDay = (day) => {
         return tasks.filter(task =>
-            isSameDay(new Date(task.date), day)
+            isSameDay(new Date(task.assigned_date), day)
         );
     };
 
@@ -207,7 +207,7 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [] }) => {
                         </div>
                         <div>
                             <div className="text-2xl font-bold">
-                                {tasks.filter(t => isSameMonth(new Date(t.date), currentMonth)).length}
+                                {tasks.filter(t => isSameMonth(new Date(t.assigned_date), currentMonth)).length}
                             </div>
                             <p className="text-indigo-100 text-[10px] uppercase font-bold tracking-tight">Tasks</p>
                         </div>
