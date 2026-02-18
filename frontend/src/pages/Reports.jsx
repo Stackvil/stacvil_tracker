@@ -193,11 +193,15 @@ const ReportTable = ({ reports }) => (
                             <tr key={i} className={`hover:bg-indigo-50/20 transition-colors ${isAbsent ? 'opacity-60' : ''}`}>
                                 <td className="px-5 py-4">
                                     <div className="flex items-center gap-3">
-                                        <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-bold text-sm shrink-0">
-                                            {r.name?.charAt(0)}
-                                        </div>
+                                        {r.profile_picture ? (
+                                            <img src={r.profile_picture} alt={r.name} className="w-8 h-8 rounded-lg shrink-0 object-cover shadow-sm" />
+                                        ) : (
+                                            <div className="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-bold text-sm shrink-0">
+                                                {r.name?.charAt(0)}
+                                            </div>
+                                        )}
                                         <div>
-                                            <p className="font-bold text-gray-800 text-sm">{r.name}</p>
+                                            <p className="font-bold text-gray-800 text-sm whitespace-nowrap">{r.full_name || r.name}</p>
                                             <p className="text-[10px] text-gray-400">#{r.emp_no}</p>
                                         </div>
                                     </div>

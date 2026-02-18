@@ -15,7 +15,7 @@ const EmployeeManagement = () => {
     const [showTasksSection, setShowTasksSection] = useState(true);
 
     const [createForm, setCreateForm] = useState({
-        emp_no: '', name: '', email: '', password: '', role: 'employee'
+        emp_no: '', name: '', full_name: '', email: '', password: '', role: 'employee'
     });
 
     // Simplified assign form — no dates, no percentage
@@ -75,7 +75,7 @@ const EmployeeManagement = () => {
             await api.post('/admin/employees', createForm);
             setSuccess('Employee created successfully!');
             setShowCreateModal(false);
-            setCreateForm({ emp_no: '', name: '', email: '', password: '', role: 'employee' });
+            setCreateForm({ emp_no: '', name: '', full_name: '', email: '', password: '', role: 'employee' });
             fetchEmployees();
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
@@ -148,6 +148,7 @@ const EmployeeManagement = () => {
 
     const filteredEmployees = employees.filter(emp =>
         emp.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (emp.full_name && emp.full_name.toLowerCase().includes(searchTerm.toLowerCase())) ||
         emp.emp_no.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
@@ -214,15 +215,23 @@ const EmployeeManagement = () => {
                     >
                         <div className="p-6">
                             <div className="flex justify-between items-start mb-4">
-                                <div className="w-14 h-14 bg-indigo-50 border-2 border-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 text-xl font-bold">
-                                    {emp.name.charAt(0)}
-                                </div>
+                                {emp.profile_picture ? (
+                                    <img
+                                        src={emp.profile_picture}
+                                        alt={emp.name}
+                                        className="w-14 h-14 rounded-2xl border-2 border-indigo-100 object-cover"
+                                    />
+                                ) : (
+                                    <div className="w-14 h-14 bg-indigo-50 border-2 border-indigo-100 rounded-2xl flex items-center justify-center text-indigo-600 text-xl font-bold">
+                                        {emp.name.charAt(0)}
+                                    </div>
+                                )}
                                 <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${emp.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
                                     {emp.status}
                                 </span>
                             </div>
-                            <h3 className="text-lg font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">{emp.name}</h3>
-                            <p className="text-sm text-gray-500 font-medium mt-1">ID: {emp.emp_no}</p>
+                            <h3 className="text-lg font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">{emp.full_name || emp.name}</h3>
+                            <p className="text-sm text-gray-500 font-medium mt-0.5">@{emp.name} · ID: {emp.emp_no}</p>
                             <div className="mt-6 space-y-3">
                                 <div className="flex items-center gap-3 text-sm text-gray-600">
                                     <Mail className="w-4 h-4 text-gray-400" />
@@ -363,7 +372,7 @@ const EmployeeManagement = () => {
                 {showCreateModal && (
                     <Modal
                         title="Create New Employee"
-                        onClose={() => { setShowCreateModal(false); setCreateForm({ emp_no: '', name: '', email: '', password: '', role: 'employee' }); setError(''); }}
+                        onClose={() => { setShowCreateModal(false); setCreateForm({ emp_no: '', name: '', full_name: '', email: '', password: '', role: 'employee' }); setError(''); }}
                     >
                         {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">{error}</div>}
                         <form onSubmit={handleCreateEmployee} className="space-y-4">
@@ -372,8 +381,12 @@ const EmployeeManagement = () => {
                                 <input type="text" required value={createForm.emp_no} onChange={(e) => setCreateForm({ ...createForm, emp_no: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g., EMP001" />
                             </div>
                             <div>
-                                <label className="block text-sm font-semibold text-gray-700 mb-1">Name</label>
-                                <input type="text" required value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Full Name" />
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Username (Login Name)</label>
+                                <input type="text" required value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. sonali" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                                <input type="text" required value={createForm.full_name} onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Sonali Kumari" />
                             </div>
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>

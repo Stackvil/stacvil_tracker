@@ -136,11 +136,15 @@ const AdminDashboard = () => {
                                         <tr key={i} className={`hover:bg-gray-50 transition-colors ${isAbsent ? 'opacity-50' : ''}`}>
                                             <td className="py-3 px-2">
                                                 <div className="flex items-center gap-2">
-                                                    <div className="w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-bold text-xs shrink-0">
-                                                        {r.name?.charAt(0)}
-                                                    </div>
+                                                    {r.profile_picture ? (
+                                                        <img src={r.profile_picture} alt={r.name} className="w-7 h-7 rounded-lg shrink-0 object-cover" />
+                                                    ) : (
+                                                        <div className="w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-bold text-xs shrink-0">
+                                                            {r.name?.charAt(0)}
+                                                        </div>
+                                                    )}
                                                     <div>
-                                                        <p className="font-semibold text-gray-800 text-sm">{r.name}</p>
+                                                        <p className="font-semibold text-gray-800 text-sm whitespace-nowrap">{r.full_name || r.name}</p>
                                                         <p className="text-[10px] text-gray-400">#{r.emp_no}</p>
                                                     </div>
                                                 </div>

@@ -20,6 +20,14 @@ const employeeSchema = new mongoose.Schema({
         trim: true,
         lowercase: true
     },
+    full_name: {
+        type: String,
+        trim: true
+    },
+    profile_picture: {
+        type: String,
+        default: null
+    },
     password: {
         type: String,
         required: true

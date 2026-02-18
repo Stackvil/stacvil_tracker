@@ -19,6 +19,8 @@ const getEmployees = async (req, res) => {
             id: e._id,
             emp_no: e.emp_no,
             name: e.name,
+            full_name: e.full_name,
+            profile_picture: e.profile_picture,
             email: e.email,
             role: e.role,
             status: activeEmpNos.has(e.emp_no) ? 'active' : 'inactive'
@@ -72,6 +74,8 @@ const getDailyReports = async (req, res) => {
             return {
                 emp_no: e.emp_no,
                 name: e.name,
+                full_name: e.full_name,
+                profile_picture: e.profile_picture,
                 login_time: formatTime(att?.login_time),
                 logout_time: formatTime(att?.logout_time),
                 title: t.title || 'No Task',
@@ -205,25 +209,33 @@ const getAdminTasks = async (req, res) => {
         const tasks = await Task.find({}).sort({ createdAt: -1 });
         const employees = await Employee.find({});
         const empMap = employees.reduce((acc, e) => {
-            acc[e.emp_no] = e.name;
+            acc[e.emp_no] = {
+                name: e.name,
+                full_name: e.full_name,
+                profile_picture: e.profile_picture
+            };
             return acc;
         }, {});
 
-        const result = tasks.map(t => ({
-            id: t._id,
-            emp_no: t.emp_no,
-            emp_name: empMap[t.emp_no] || 'Unknown',
-            task_type: t.task_type,
-            title: t.title,
-            description: t.description,
-            status: t.status,
-            completion_percentage: t.completion_percentage,
-            reason: t.reason,
-            assigned_date: t.assigned_date,
-            due_date: t.due_date,
-            completed_date: t.completed_date,
-            created_at: t.createdAt
-        }));
+        const result = tasks.map(t => {
+            const empInfo = empMap[t.emp_no] || {};
+            return {
+                id: t._id,
+                emp_no: t.emp_no,
+                emp_name: empInfo.full_name || empInfo.name || 'Unknown',
+                profile_picture: empInfo.profile_picture,
+                task_type: t.task_type,
+                title: t.title,
+                description: t.description,
+                status: t.status,
+                completion_percentage: t.completion_percentage,
+                reason: t.reason,
+                assigned_date: t.assigned_date,
+                due_date: t.due_date,
+                completed_date: t.completed_date,
+                created_at: t.createdAt
+            };
+        });
 
         res.json(result);
     } catch (error) {

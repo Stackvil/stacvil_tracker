@@ -81,12 +81,20 @@ const DashboardLayout = () => {
                             <div className="h-8 w-px bg-gray-200 mx-2"></div>
                             <div className="flex items-center gap-3">
                                 <div className="text-right hidden sm:block">
-                                    <p className="text-sm font-bold text-gray-800">{user?.name}</p>
+                                    <p className="text-sm font-bold text-gray-800">{user?.full_name || user?.name}</p>
                                     <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
                                 </div>
-                                <div className="w-10 h-10 bg-indigo-100 border-2 border-indigo-200 rounded-full flex items-center justify-center text-indigo-600 font-bold shadow-inner">
-                                    {user?.name?.charAt(0)}
-                                </div>
+                                {user?.profile_picture ? (
+                                    <img
+                                        src={user.profile_picture}
+                                        alt={user.name}
+                                        className="w-10 h-10 rounded-full border-2 border-indigo-200 object-cover shadow-sm"
+                                    />
+                                ) : (
+                                    <div className="w-10 h-10 bg-indigo-100 border-2 border-indigo-200 rounded-full flex items-center justify-center text-indigo-600 font-bold shadow-inner">
+                                        {(user?.full_name || user?.name)?.charAt(0)}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     </div>
