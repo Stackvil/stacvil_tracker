@@ -36,9 +36,15 @@ app.use(morgan('dev'));
 app.get('/api/health', async (req, res) => {
     try {
         const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
+        const dbInfo = mongoose.connection.readyState === 1 ? {
+            host: mongoose.connection.host,
+            name: mongoose.connection.name
+        } : null;
+
         res.json({
             status: 'ok',
             database: dbStatus,
+            dbInfo,
             environment: {
                 hasMongoUri: !!process.env.MONGODB_URI,
                 hasJwtSecret: !!process.env.JWT_SECRET,
