@@ -79,10 +79,15 @@ const loginEmployee = async (req, res) => {
         const now = istTime.datetime;
 
         // Record login time (don't block login if this fails)
+        // Only set login_time if it doesn't exist for today ($setOnInsert), 
+        // but always ensure logout_time is null for the active session.
         try {
             await Attendance.findOneAndUpdate(
                 { emp_no: employee.emp_no, date: today },
-                { login_time: now },
+                {
+                    $setOnInsert: { login_time: now },
+                    $set: { logout_time: null }
+                },
                 { upsert: true, new: true }
             );
         } catch (attErr) {
@@ -126,18 +131,23 @@ const logoutEmployee = async (req, res) => {
 
         let duration = null;
         if (record) {
-            const loginTime = new Date(record.login_time);
-            const diffMs = istTime.timestamp - loginTime;
-            const diffHrs = Math.floor(diffMs / 3600000);
-            const diffMins = Math.floor((diffMs % 3600000) / 60000);
-            duration = {
-                hours: diffHrs,
-                minutes: diffMins,
-                formatted: `${diffHrs}h ${diffMins}m`
-            };
-
             record.logout_time = nowStr;
             await record.save();
+
+            // Calculate duration correctly using the new ISO timestamps
+            const loginTime = new Date(record.login_time);
+            const logoutTime = new Date(nowStr);
+            const diffMs = logoutTime - loginTime;
+
+            if (diffMs > 0) {
+                const diffHrs = Math.floor(diffMs / 3600000);
+                const diffMins = Math.floor((diffMs % 3600000) / 60000);
+                duration = {
+                    hours: diffHrs,
+                    minutes: diffMins,
+                    formatted: `${diffHrs}h ${diffMins}m`
+                };
+            }
         }
 
         res.json({
