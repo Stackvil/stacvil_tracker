@@ -316,4 +316,21 @@ const deleteEmployee = async (req, res) => {
     }
 };
 
-module.exports = { getEmployees, getDailyReports, getAnalytics, createEmployee, assignTask, getAdminTasks, respondToDecline, deleteEmployee };
+// @desc    Delete task (Admin only)
+const deleteTask = async (req, res) => {
+    const { id } = req.params;
+    try {
+        const task = await Task.findById(id);
+        if (!task) {
+            return res.status(404).json({ message: 'Task not found' });
+        }
+
+        await Task.findByIdAndDelete(id);
+        res.json({ message: 'Task deleted successfully' });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { getEmployees, getDailyReports, getAnalytics, createEmployee, assignTask, getAdminTasks, respondToDecline, deleteEmployee, deleteTask };

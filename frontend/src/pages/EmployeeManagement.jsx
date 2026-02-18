@@ -33,6 +33,7 @@ const EmployeeManagement = () => {
     const [employeeTasks, setEmployeeTasks] = useState([]);
     const [loadingAttendance, setLoadingAttendance] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(null);
+    const [showDeleteTaskModal, setShowDeleteTaskModal] = useState(null); // taskId
 
     useEffect(() => {
         fetchEmployees();
@@ -148,6 +149,21 @@ const EmployeeManagement = () => {
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to delete employee');
             setShowDeleteModal(null);
+        }
+    };
+
+    const handleDeleteTask = async (taskId) => {
+        setError('');
+        setSuccess('');
+        try {
+            await api.delete(`/admin/tasks/${taskId}`);
+            setSuccess('Task deleted successfully!');
+            setShowDeleteTaskModal(null);
+            fetchAdminTasks();
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to delete task');
+            setShowDeleteTaskModal(null);
         }
     };
 
@@ -379,6 +395,14 @@ const EmployeeManagement = () => {
                                                         Admin Note: {task.admin_note}
                                                     </div>
                                                 )}
+                                                {/* Delete Task Button */}
+                                                <button
+                                                    onClick={() => setShowDeleteTaskModal(task.id)}
+                                                    className="mt-1 flex items-center gap-1 text-[10px] text-red-600 font-bold hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                    Delete
+                                                </button>
                                             </div>
                                         </div>
                                     );
@@ -574,6 +598,24 @@ const EmployeeManagement = () => {
                                 >
                                     Confirm Reject
                                 </button>
+                            </div>
+                        </div>
+                    </Modal>
+                )}
+            </AnimatePresence>
+
+            {/* Delete Task Confirmation Modal */}
+            <AnimatePresence>
+                {showDeleteTaskModal && (
+                    <Modal title="Delete Task" onClose={() => setShowDeleteTaskModal(null)}>
+                        <div className="space-y-4">
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                                <p className="text-red-800 font-medium">Are you sure you want to delete this task?</p>
+                                <p className="text-red-600 text-sm mt-2">This action cannot be undone. The task will be removed from the employee's dashboard.</p>
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button onClick={() => setShowDeleteTaskModal(null)} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                                <button onClick={() => handleDeleteTask(showDeleteTaskModal)} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all">Delete Task</button>
                             </div>
                         </div>
                     </Modal>
