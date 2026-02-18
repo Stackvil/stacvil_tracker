@@ -477,6 +477,10 @@ const TaskCard = ({ task, onAccept, onDecline, onUpdateProgress }) => {
                                 {task.task_type === 'daily' ? 'Daily' : 'Custom'}
                             </span>
                         )}
+                        {/* Source Badge */}
+                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${task.is_self_assigned ? 'bg-purple-100 text-purple-700' : 'bg-cyan-100 text-cyan-700'}`}>
+                            {task.is_self_assigned ? 'Self Added' : 'Admin Assigned'}
+                        </span>
                         {/* Postponed Badge: If task is not completed and has a reason from a previous logout */}
                         {!isCompleted && !isDeclined && task.reason && (
                             <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-amber-100 text-amber-700 flex items-center gap-1">
