@@ -1,0 +1,9 @@
+const express = require('express');
+const router = express.Router();
+const { getAttendanceHistory, getEmployeeAttendanceForAdmin } = require('../controllers/attendanceController');
+const { protect, admin } = require('../middleware/auth');
+
+router.get('/history', protect, getAttendanceHistory);
+router.get('/admin/history/:emp_no', protect, admin, getEmployeeAttendanceForAdmin);
+
+module.exports = router;
