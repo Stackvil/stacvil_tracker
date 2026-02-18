@@ -18,10 +18,11 @@ const employees = [
 const seedEmployees = async () => {
     try {
         await connectDB();
+        console.log('Using standard password: password123 for all employees...');
 
         for (const empData of employees) {
             const email = `${empData.name}@stackvil.com`;
-            const password = Math.random().toString(36).slice(-8);
+            const password = 'password123';
 
             console.log(`Setting up ${empData.name}...`);
 
@@ -39,8 +40,7 @@ const seedEmployees = async () => {
             employee.profile_picture = `https://ui-avatars.com/api/?name=${encodeURIComponent(empData.full_name)}&background=random`;
 
             await employee.save();
-
-            console.log(`✅ ${empData.name} - Email: ${email}, Password: ${password}`);
+            console.log(`✅ ${empData.name} - ID: ${empData.emp_no} is ready.`);
         }
 
         // Setup Admin
@@ -59,12 +59,12 @@ const seedEmployees = async () => {
         admin.profile_picture = 'https://ui-avatars.com/api/?name=Admin&background=6366f1&color=fff';
 
         await admin.save();
-        console.log('✅ Admin setup complete - Email: admin@stackvil.com, Password: stackvil');
+        console.log('✅ Admin (ADMIN001) is ready.');
 
-        console.log('\n🚀 All employees seeded successfully with SECURE hashes!');
+        console.log('\n🚀 PASSWORDS STANDARDIZED!');
         process.exit();
     } catch (error) {
-        console.error('❌ Error seeding employees:', error.message);
+        console.error('❌ Error seeding:', error.message);
         process.exit(1);
     }
 };
