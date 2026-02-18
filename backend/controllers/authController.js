@@ -39,20 +39,31 @@ const registerEmployee = async (req, res) => {
 // @route   POST /api/auth/login
 const loginEmployee = async (req, res) => {
     const { emp_no, password } = req.body;
+    const cleanEmpNo = emp_no?.trim().toUpperCase();
 
     try {
-        const employee = await Employee.findOne({ emp_no });
+        console.log(`[LOGIN TRACE] Input ID: "${emp_no}", Cleaned ID: "${cleanEmpNo}"`);
+
+        const employee = await Employee.findOne({
+            $or: [
+                { emp_no: cleanEmpNo },
+                { email: emp_no?.toLowerCase().trim() }
+            ]
+        });
+
         if (!employee) {
-            console.log(`Login failed: Employee ${emp_no} not found`);
+            console.log(`[LOGIN TRACE] User not found for: "${cleanEmpNo}"`);
             return res.status(401).json({ message: 'Invalid Employee ID' });
         }
 
-        console.log(`Comparing password for ${emp_no}...`);
+        console.log(`[LOGIN TRACE] User found: ${employee.emp_no}. Role: ${employee.role}`);
+        console.log(`[LOGIN TRACE] DB Hash prefix: ${employee.password.substring(0, 10)}...`);
+        console.log(`[LOGIN TRACE] Input password length: ${password?.length}`);
+
         const isMatch = await employee.comparePassword(password);
-        console.log(`Match result: ${isMatch}`);
+        console.log(`[LOGIN TRACE] BCrypt Compare Result: ${isMatch}`);
 
         if (!isMatch) {
-            console.log(`Login failed: Password mismatch for ${emp_no}`);
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
