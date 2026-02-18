@@ -39,6 +39,11 @@ app.get('/api/health', async (req, res) => {
         res.json({
             status: 'ok',
             database: dbStatus,
+            environment: {
+                hasMongoUri: !!process.env.MONGODB_URI,
+                hasJwtSecret: !!process.env.JWT_SECRET,
+                nodeEnv: process.env.NODE_ENV
+            },
             timestamp: new Date().toISOString()
         });
     } catch (error) {
