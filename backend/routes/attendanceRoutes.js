@@ -4,6 +4,7 @@ const { getAttendanceHistory, getEmployeeAttendanceForAdmin } = require('../cont
 const { protect, admin } = require('../middleware/auth');
 
 router.get('/history', protect, getAttendanceHistory);
+router.get('/duration', protect, getWorkDuration);
 router.get('/admin/history/:emp_no', protect, admin, getEmployeeAttendanceForAdmin);
 
 module.exports = router;

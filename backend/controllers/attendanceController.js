@@ -72,4 +72,41 @@ const getEmployeeAttendanceForAdmin = async (req, res) => {
     }
 };
 
-module.exports = { getAttendanceHistory, getEmployeeAttendanceForAdmin };
+// @desc    Get total work duration for today (in milliseconds)
+// @route   GET /api/attendance/duration
+const getWorkDuration = async (req, res) => {
+    const { emp_no } = req.user;
+
+    try {
+        const istTime = getISTTime();
+        const today = istTime.date;
+
+        // Find all attendance records for today
+        const attendanceRows = await Attendance.find({
+            emp_no,
+            date: today
+        });
+
+        let totalMilliseconds = 0;
+        const now = new Date();
+
+        attendanceRows.forEach(record => {
+            const login = new Date(record.login_time);
+            const logout = record.logout_time ? new Date(record.logout_time) : now; // If no logout, use current time
+
+            if (!isNaN(login.getTime()) && !isNaN(logout.getTime())) {
+                const diff = logout - login;
+                if (diff > 0) {
+                    totalMilliseconds += diff;
+                }
+            }
+        });
+
+        res.json({ totalMilliseconds });
+    } catch (error) {
+        console.error('Error fetching work duration:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { getAttendanceHistory, getEmployeeAttendanceForAdmin, getWorkDuration };
