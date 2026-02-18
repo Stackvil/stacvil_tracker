@@ -3,7 +3,7 @@ import api from '../services/api';
 import { AuthContext } from '../context/AuthContext';
 import {
     CheckCircle2, Clock, AlertCircle, Lock, X, Calendar as CalendarIcon,
-    ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, XCircle
+    ChevronDown, ChevronUp, ThumbsUp, ThumbsDown, XCircle, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
@@ -26,6 +26,12 @@ const EmployeeDashboard = () => {
     const [declineModal, setDeclineModal] = useState(null); // task object
     const [declineReason, setDeclineReason] = useState('');
     const [declineError, setDeclineError] = useState('');
+
+    // Add Task modal state
+    const [showAddTaskModal, setShowAddTaskModal] = useState(false);
+    const [newTask, setNewTask] = useState({ title: '', description: '' });
+    const [addTaskLoading, setAddTaskLoading] = useState(false);
+    const [addTaskError, setAddTaskError] = useState('');
 
     // Attendance states
     const [attendanceHistory, setAttendanceHistory] = useState([]);
@@ -111,6 +117,22 @@ const EmployeeDashboard = () => {
         }
     };
 
+    const handleAddTask = async (e) => {
+        e.preventDefault();
+        setAddTaskLoading(true);
+        setAddTaskError('');
+        try {
+            await api.post('/tasks/self-assign', newTask);
+            setShowAddTaskModal(false);
+            setNewTask({ title: '', description: '' });
+            fetchTasks();
+        } catch (error) {
+            setAddTaskError(error.response?.data?.message || 'Failed to add task');
+        } finally {
+            setAddTaskLoading(false);
+        }
+    };
+
     const toggleSection = (section) => {
         setCollapsedSections(prev => ({ ...prev, [section]: !prev[section] }));
     };
@@ -128,6 +150,13 @@ const EmployeeDashboard = () => {
                     <p className="text-gray-500">Track and manage your tasks.</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
+                    <button
+                        onClick={() => setShowAddTaskModal(true)}
+                        className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold flex items-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add Task
+                    </button>
                     <button
                         onClick={() => setShowPasswordModal(true)}
                         className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-semibold flex items-center gap-2 hover:bg-gray-200 transition-all"
@@ -322,6 +351,21 @@ const EmployeeDashboard = () => {
                     />
                 )}
             </AnimatePresence>
+
+            {/* Add Task Modal */}
+            <AddTaskModal
+                show={showAddTaskModal}
+                newTask={newTask}
+                setNewTask={setNewTask}
+                loading={addTaskLoading}
+                error={addTaskError}
+                onClose={() => {
+                    setShowAddTaskModal(false);
+                    setNewTask({ title: '', description: '' });
+                    setAddTaskError('');
+                }}
+                onAdd={handleAddTask}
+            />
         </div>
     );
 };
@@ -554,6 +598,82 @@ const TaskCard = ({ task, onAccept, onDecline, onUpdateProgress }) => {
                 </div>
             </div>
         </motion.div>
+    );
+};
+
+const AddTaskModal = ({ show, onClose, onAdd, newTask, setNewTask, loading, error }) => {
+    return (
+        <AnimatePresence>
+            {show && (
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+                    onClick={onClose}
+                >
+                    <motion.div
+                        initial={{ scale: 0.95, opacity: 0 }}
+                        animate={{ scale: 1, opacity: 1 }}
+                        exit={{ scale: 0.95, opacity: 0 }}
+                        onClick={(e) => e.stopPropagation()}
+                        className="bg-white rounded-2xl shadow-2xl max-w-md w-full p-6 text-gray-800"
+                    >
+                        <div className="flex justify-between items-center mb-6">
+                            <h2 className="text-2xl font-bold flex items-center gap-2">
+                                <Plus className="w-6 h-6" />
+                                Add New Task
+                            </h2>
+                            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                                <X className="w-6 h-6" />
+                            </button>
+                        </div>
+
+                        {error && (
+                            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl flex items-center gap-2">
+                                <AlertCircle className="w-4 h-4" />
+                                {error}
+                            </div>
+                        )}
+
+                        <form onSubmit={onAdd} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Task Title</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={newTask.title}
+                                    onChange={(e) => setNewTask({ ...newTask, title: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    placeholder="What are you working on?"
+                                />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Description (Optional)</label>
+                                <textarea
+                                    value={newTask.description}
+                                    onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
+                                    placeholder="Any additional details..."
+                                    rows={3}
+                                />
+                            </div>
+                            <div className="flex gap-3 pt-4">
+                                <button type="button" onClick={onClose} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                                <button
+                                    type="submit"
+                                    disabled={loading}
+                                    className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 disabled:opacity-50"
+                                >
+                                    {loading ? <Clock className="w-4 h-4 animate-spin" /> : <Plus className="w-4 h-4" />}
+                                    Create Task
+                                </button>
+                            </div>
+                        </form>
+                    </motion.div>
+                </motion.div>
+            )}
+        </AnimatePresence>
     );
 };
 

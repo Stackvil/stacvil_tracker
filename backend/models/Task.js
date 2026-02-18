@@ -49,6 +49,10 @@ const taskSchema = new mongoose.Schema({
     admin_note: {
         type: String,
         default: null
+    },
+    is_self_assigned: {
+        type: Boolean,
+        default: false
     }
 }, { timestamps: true });
 

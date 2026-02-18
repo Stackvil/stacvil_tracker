@@ -100,6 +100,7 @@ const getDailyReports = async (req, res) => {
                 assigned_date: t.assigned_date || 'N/A',
                 due_date: t.due_date || 'N/A',
                 completed_date: t.completed_date || 'N/A',
+                is_self_assigned: t.is_self_assigned || false,
                 working_hours
             };
         });
@@ -249,6 +250,7 @@ const getAdminTasks = async (req, res) => {
                 assigned_date: t.assigned_date,
                 due_date: t.due_date,
                 completed_date: t.completed_date,
+                is_self_assigned: t.is_self_assigned,
                 created_at: t.createdAt
             };
         });

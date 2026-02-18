@@ -106,4 +106,37 @@ const getTaskHistory = async (req, res) => {
     }
 };
 
-module.exports = { getEmployeeTasks, updateTaskStatus, getTaskHistory };
+// @desc    Self-assign task (Employee added task)
+const createSelfAssignedTask = async (req, res) => {
+    const { emp_no } = req.user;
+    const { title, description } = req.body;
+
+    try {
+        if (!title) {
+            return res.status(400).json({ message: 'Title is required' });
+        }
+
+        const istTime = getISTTime();
+        const today = istTime.date;
+
+        const task = new Task({
+            emp_no,
+            task_type: 'daily', // Self-assigned are daily tasks for today
+            assigned_date: today,
+            due_date: today,
+            title,
+            description: description || '',
+            completion_percentage: 0,
+            status: 'in_progress', // Self-assigned tasks start as in_progress
+            is_self_assigned: true
+        });
+
+        await task.save();
+        res.status(201).json({ message: 'Task added successfully', task });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { getEmployeeTasks, updateTaskStatus, getTaskHistory, createSelfAssignedTask };

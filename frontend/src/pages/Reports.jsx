@@ -201,7 +201,14 @@ const ReportTable = ({ reports }) => (
                                             </div>
                                         )}
                                         <div>
-                                            <p className="font-bold text-gray-800 text-sm whitespace-nowrap">{r.full_name || r.name}</p>
+                                            <div className="flex items-center gap-2">
+                                                <p className="font-bold text-gray-800 text-sm whitespace-nowrap">{r.full_name || r.name}</p>
+                                                {r.is_self_assigned && (
+                                                    <span className="text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider">
+                                                        Employee Added
+                                                    </span>
+                                                )}
+                                            </div>
                                             <p className="text-[10px] text-gray-400">#{r.emp_no}</p>
                                         </div>
                                     </div>
