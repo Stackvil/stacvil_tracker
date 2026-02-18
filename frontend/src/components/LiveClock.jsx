@@ -24,7 +24,8 @@ const LiveClock = () => {
                 syncRef.current.performanceStartTime = performance.now();
 
                 // 2. Fetch Duration (Only for employees, or if endpoint works)
-                if (user?.role === 'employee') {
+                const role = user?.role?.toLowerCase();
+                if (role === 'employee') {
                     try {
                         const durationRes = await api.get('/attendance/duration');
                         syncRef.current.workDurationStart = (durationRes.data.totalMilliseconds || 0) / 1000;
@@ -75,6 +76,8 @@ const LiveClock = () => {
 
     if (!currentTime) return null;
 
+    const role = user?.role?.toLowerCase();
+
     return (
         <div className="flex gap-4">
             {/* Live Clock */}
@@ -91,7 +94,7 @@ const LiveClock = () => {
             </div>
 
             {/* Work Duration - Only show for employees */}
-            {user?.role === 'employee' && (
+            {role === 'employee' && (
                 <div className="flex items-center gap-3 px-4 py-2 bg-green-50 border border-green-100 rounded-xl shadow-sm">
                     <div className="flex flex-col">
                         <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest leading-none mb-1">Work Duration</span>
