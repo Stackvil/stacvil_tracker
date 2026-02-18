@@ -27,8 +27,11 @@ const registerEmployee = async (req, res) => {
         await employee.save();
         res.status(201).json({ message: 'Employee registered successfully' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Registration Error:', error);
+        res.status(500).json({
+            message: 'Server error during registration',
+            error: error.message
+        });
     }
 };
 
@@ -48,10 +51,14 @@ const loginEmployee = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
+        if (!process.env.JWT_SECRET) {
+            throw new Error('JWT_SECRET is not defined in environment variables');
+        }
+
         const token = jwt.sign(
             { id: employee._id, emp_no: employee.emp_no, role: employee.role },
             process.env.JWT_SECRET,
-            { expiresIn: process.env.JWT_EXPIRE }
+            { expiresIn: process.env.JWT_EXPIRE || '24h' }
         );
 
         const istTime = getISTTime();
@@ -61,7 +68,7 @@ const loginEmployee = async (req, res) => {
         // Record login time
         await Attendance.findOneAndUpdate(
             { emp_no, date: today },
-            { login_time: now }, // Mongoose handles Date conversion if now is a ISO string or Date
+            { login_time: now },
             { upsert: true, new: true }
         );
 
@@ -76,8 +83,12 @@ const loginEmployee = async (req, res) => {
             }
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Login Error Details:', error);
+        res.status(500).json({
+            message: 'Server error during login',
+            error: error.message,
+            stack: error.stack
+        });
     }
 };
 
@@ -118,8 +129,11 @@ const logoutEmployee = async (req, res) => {
             duration: duration
         });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Logout Error:', error);
+        res.status(500).json({
+            message: 'Server error during logout',
+            error: error.message
+        });
     }
 };
 
@@ -149,8 +163,11 @@ const changePassword = async (req, res) => {
 
         res.json({ message: 'Password changed successfully' });
     } catch (error) {
-        console.error(error);
-        res.status(500).json({ message: 'Server error' });
+        console.error('Change Password Error:', error);
+        res.status(500).json({
+            message: 'Server error during password change',
+            error: error.message
+        });
     }
 };
 
