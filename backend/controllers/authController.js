@@ -114,6 +114,16 @@ const loginEmployee = async (req, res) => {
         const today = istTime.date;
         const now = istTime.datetime;
 
+        // CLOSE PREVIOUS ATTENDANCE SESSION IF OPEN
+        try {
+            await Attendance.updateMany(
+                { emp_no: employee.emp_no, logout_time: null },
+                { $set: { logout_time: now } }
+            );
+        } catch (prevErr) {
+            console.error('[AUTH] Failed to close previous sessions:', prevErr.message);
+        }
+
         // Record login time (don't block login if this fails)
         // Create a NEW record for every login to track multiple sessions in a day
         try {
