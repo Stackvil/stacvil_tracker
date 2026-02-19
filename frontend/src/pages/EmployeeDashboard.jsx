@@ -223,18 +223,18 @@ const EmployeeDashboard = () => {
             </div>
 
             {/* Tab Navigation */}
-            <div className="flex p-1 bg-gray-200/50 rounded-2xl w-fit">
+            <div className="flex p-1 bg-gray-200/50 rounded-2xl w-full sm:w-fit">
                 <button
                     onClick={() => setActiveTab('tasks')}
-                    className={`px-8 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'tasks' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`flex-1 sm:flex-none px-4 sm:px-8 py-2.5 rounded-xl font-bold transition-all text-sm sm:text-base ${activeTab === 'tasks' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                 >
                     My Tasks
                 </button>
                 <button
                     onClick={() => setActiveTab('attendance')}
-                    className={`px-8 py-2.5 rounded-xl font-bold transition-all ${activeTab === 'attendance' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
+                    className={`flex-1 sm:flex-none px-4 sm:px-8 py-2.5 rounded-xl font-bold transition-all text-sm sm:text-base ${activeTab === 'attendance' ? 'bg-white text-indigo-600 shadow-sm' : 'text-gray-500 hover:text-gray-700'}`}
                 >
-                    Attendance History
+                    History
                 </button>
             </div>
 
@@ -507,124 +507,103 @@ const TaskCard = ({ task, onAccept, onDecline, onUpdateProgress }) => {
 
     return (
         <motion.div layout className="bg-white p-4 rounded-xl border border-gray-200 shadow-sm hover:shadow-md transition-all">
-            <div className="flex items-start gap-4">
-                <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${badge.bg} ${badge.text}`}>
-                    {isCompleted ? <CheckCircle2 className="w-5 h-5" /> :
-                        isDeclined ? <XCircle className="w-5 h-5" /> :
-                            <Clock className="w-5 h-5" />}
+            <div className="flex flex-col sm:flex-row items-start gap-4">
+                <div className="flex justify-between items-center w-full sm:w-auto">
+                    <div className={`w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 ${badge.bg} ${badge.text}`}>
+                        {isCompleted ? <CheckCircle2 className="w-5 h-5" /> :
+                            isDeclined ? <XCircle className="w-5 h-5" /> :
+                                <Clock className="w-5 h-5" />}
+                    </div>
+                    {/* Mobile only completion bar */}
+                    <div className="flex flex-col items-end sm:hidden">
+                        <div className="w-16 bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                            <div
+                                className={`h-full transition-all duration-500 ${isCompleted ? 'bg-green-500' : isDeclined ? 'bg-orange-400' : 'bg-indigo-500'}`}
+                                style={{ width: `${task.completion_percentage}%` }}
+                            />
+                        </div>
+                        <span className="font-bold text-xs text-gray-700">{task.completion_percentage}%</span>
+                    </div>
                 </div>
 
-                <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2 mb-1 flex-wrap">
-                        <h4 className="font-bold text-gray-800">{task.title}</h4>
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${badge.bg} ${badge.text}`}>
-                            {badge.label}
-                        </span>
-                        {task.task_type && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-indigo-50 text-indigo-600">
-                                {task.task_type === 'daily' ? 'Daily' : 'Custom'}
+                <div className="flex-1 min-w-0 w-full">
+                    <div className="flex items-center gap-2 mb-2 flex-wrap">
+                        <h4 className="font-bold text-gray-800 text-sm sm:text-base">{task.title}</h4>
+                        <div className="flex flex-wrap gap-1">
+                            <span className={`text-[8px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${badge.bg} ${badge.text}`}>
+                                {badge.label}
                             </span>
-                        )}
-                        {/* Source Badge */}
-                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${task.is_self_assigned ? 'bg-purple-100 text-purple-700' : 'bg-cyan-100 text-cyan-700'}`}>
-                            {task.is_self_assigned ? 'Self Added' : 'Admin Assigned'}
-                        </span>
-                        {/* Postponed Badge: If task is not completed and due date is in the past */}
-                        {!isCompleted && !isDeclined && task.due_date < new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-amber-100 text-amber-700 flex items-center gap-1">
-                                <AlertCircle className="w-2 h-2" />
-                                Postponed
+                            {task.task_type && (
+                                <span className="text-[8px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-indigo-50 text-indigo-600">
+                                    {task.task_type === 'daily' ? 'Daily' : 'Custom'}
+                                </span>
+                            )}
+                            <span className={`text-[8px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${task.is_self_assigned ? 'bg-purple-100 text-purple-700' : 'bg-cyan-100 text-cyan-700'}`}>
+                                {task.is_self_assigned ? 'Self' : 'Admin'}
                             </span>
-                        )}
-                        {/* Status reason from logout */}
-                        {!isCompleted && !isDeclined && task.reason && !task.reason.startsWith('Decline rejected') && (
-                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-gray-100 text-gray-600 flex items-center gap-1">
-                                <Clock className="w-2 h-2" />
-                                {task.reason}
-                            </span>
-                        )}
+                            {!isCompleted && !isDeclined && task.due_date < new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) && (
+                                <span className="text-[8px] sm:text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-amber-100 text-amber-700 flex items-center gap-1">
+                                    Postponed
+                                </span>
+                            )}
+                        </div>
                     </div>
 
                     {task.description && (
-                        <p className="text-gray-600 text-sm mb-2">{task.description}</p>
+                        <p className="text-gray-600 text-xs sm:text-sm mb-3 line-clamp-2 sm:line-clamp-none">{task.description}</p>
                     )}
 
-                    <div className="flex flex-wrap gap-3 text-xs text-gray-500">
+                    <div className="flex flex-wrap gap-2 sm:gap-3 text-[10px] sm:text-xs text-gray-500 mb-3">
                         <div className="flex items-center gap-1">
                             <CalendarIcon className="w-3 h-3" />
-                            <span>Assigned: {task.assigned_date ? format(parseISO(task.assigned_date), 'MMM dd, yyyy') : 'N/A'}</span>
+                            <span>Assigned: {task.assigned_date ? format(parseISO(task.assigned_date), 'MMM dd') : 'N/A'}</span>
                         </div>
-                        <div className={`flex items-center gap-1 p-1 px-2 rounded-lg ${!isCompleted && !isDeclined ? 'bg-amber-100 text-amber-800 font-bold' : ''}`}>
+                        <div className={`flex items-center gap-1 px-1.5 py-0.5 rounded-lg ${!isCompleted && !isDeclined ? 'bg-amber-100 text-amber-800 font-bold' : ''}`}>
                             <Clock className="w-3 h-3" />
-                            <span>Due: {task.due_date ? format(parseISO(task.due_date), 'MMM dd, yyyy') : 'N/A'}</span>
+                            <span>Due: {task.due_date ? format(parseISO(task.due_date), 'MMM dd') : 'N/A'}</span>
                         </div>
-                        {task.completed_date && (
-                            <div className="flex items-center gap-1 text-green-600">
-                                <CheckCircle2 className="w-3 h-3" />
-                                <span>Completed: {format(parseISO(task.completed_date), 'MMM dd, yyyy')}</span>
-                            </div>
-                        )}
                     </div>
-
-                    {/* Decline reason shown on declined tasks */}
-                    {isDeclined && task.reason && (
-                        <div className="mt-2 bg-orange-50 border border-orange-200 rounded-lg px-3 py-2">
-                            <p className="text-xs text-orange-700 font-medium">
-                                Your reason: <span className="font-normal">{task.reason}</span>
-                            </p>
-                            <p className="text-xs text-orange-500 mt-0.5">Waiting for admin to review your decline.</p>
-                        </div>
-                    )}
-
-                    {/* Postponed reason / Status note from logout */}
-                    {!isCompleted && !isDeclined && task.reason && (
-                        <div className="mt-2 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2">
-                            <p className="text-xs text-amber-800 font-medium">
-                                Postponed Status: <span className="font-normal text-amber-700">{task.reason}</span>
-                            </p>
-                        </div>
-                    )}
-
-                    {/* Admin rejection note shown if decline was rejected */}
-                    {task.admin_note && !isDeclined && !isCompleted && (
-                        <div className="mt-3 p-2 bg-indigo-50 border border-indigo-100 rounded-lg flex items-start gap-2">
-                            <AlertCircle className="w-4 h-4 text-indigo-600 mt-0.5 shrink-0" />
-                            <p className="text-xs text-indigo-700">
-                                <span className="font-bold">Admin Feedback:</span> {task.admin_note}
-                            </p>
-                        </div>
-                    )}
 
                     {/* Progress slider — only for in_progress tasks */}
                     {isInProgress && (
-                        <div className="mt-3">
-                            <div className="flex justify-between items-center mb-1">
-                                <span className="text-xs font-semibold text-gray-600">Your Progress</span>
-                                <span className="text-xs font-bold text-indigo-600">{localPct}%</span>
+                        <div className="mt-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
+                            <div className="flex justify-between items-center mb-1.5">
+                                <span className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase">Update Progress</span>
+                                <span className="text-xs sm:text-sm font-black text-indigo-600">{localPct}%</span>
                             </div>
                             <input
                                 type="range"
-                                min="0"
-                                max="100"
-                                step="1"
+                                min="0" max="100" step="1"
                                 value={localPct}
                                 onChange={(e) => { setIsDragging(true); setLocalPct(parseInt(e.target.value)); }}
                                 onMouseUp={handleSliderRelease}
                                 onTouchEnd={handleSliderRelease}
                                 className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                             />
-                            <div className="flex justify-between text-[10px] text-gray-400 mt-0.5">
-                                <span>0%</span>
-                                <span>50%</span>
-                                <span>100%</span>
-                            </div>
+                        </div>
+                    )}
+
+                    {/* Pending Buttons */}
+                    {isPending && (
+                        <div className="flex gap-2 mt-3">
+                            <button
+                                onClick={() => onAccept(task.id)}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-xs bg-green-600 text-white rounded-xl hover:bg-green-700 transition-all font-bold shadow-sm"
+                            >
+                                <ThumbsUp className="w-3 h-3" /> Accept
+                            </button>
+                            <button
+                                onClick={() => onDecline(task)}
+                                className="flex-1 flex items-center justify-center gap-2 px-4 py-2 text-xs bg-red-100 text-red-700 rounded-xl hover:bg-red-200 transition-all font-bold"
+                            >
+                                <ThumbsDown className="w-3 h-3" /> Decline
+                            </button>
                         </div>
                     )}
                 </div>
 
-                {/* Right side: completion bar + action buttons */}
-                <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                    {/* Completion bar (read-only display) */}
+                {/* Right side: desktop completion bar */}
+                <div className="hidden sm:flex flex-col items-end gap-2 flex-shrink-0">
                     <div className="w-20 bg-gray-100 h-1.5 rounded-full overflow-hidden">
                         <div
                             className={`h-full transition-all duration-500 ${isCompleted ? 'bg-green-500' : isDeclined ? 'bg-orange-400' : 'bg-indigo-500'}`}
@@ -632,34 +611,13 @@ const TaskCard = ({ task, onAccept, onDecline, onUpdateProgress }) => {
                         />
                     </div>
                     <span className="font-bold text-sm text-gray-700">{task.completion_percentage}%</span>
-
-                    {/* Accept / Decline buttons for pending tasks */}
-                    {isPending && (
-                        <div className="flex gap-2 mt-1">
-                            <button
-                                onClick={() => onAccept(task.id)}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-semibold"
-                                title="Accept Task"
-                            >
-                                <ThumbsUp className="w-3 h-3" />
-                                Accept
-                            </button>
-                            <button
-                                onClick={() => onDecline(task)}
-                                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all font-semibold"
-                                title="Decline Task"
-                            >
-                                <ThumbsDown className="w-3 h-3" />
-                                Decline
-                            </button>
-                        </div>
-                    )}
                 </div>
             </div>
         </motion.div>
     );
 };
 
+// Add Task Modal Component
 const AddTaskModal = ({ show, onClose, onAdd, newTask, setNewTask, loading, error }) => {
     return (
         <AnimatePresence>

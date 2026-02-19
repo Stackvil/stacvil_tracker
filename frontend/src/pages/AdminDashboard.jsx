@@ -126,85 +126,165 @@ const AdminDashboard = () => {
                 {todayReport.length === 0 ? (
                     <div className="text-center py-8 text-gray-400">No employee data for today</div>
                 ) : (
-                    <div className="overflow-x-auto">
-                        <table className="w-full text-left">
-                            <thead>
-                                <tr className="border-b border-gray-100">
-                                    {['Employee', 'Login', 'Logout', 'Task', 'Status', 'Progress'].map(h => (
-                                        <th key={h} className="pb-3 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">{h}</th>
-                                    ))}
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-gray-50">
-                                {todayReport.map((r, i) => {
-                                    const s = STATUS_COLORS[r.status];
-                                    const isAbsent = r.login_time === 'N/A';
-                                    return (
-                                        <tr key={i} className={`hover:bg-gray-50 transition-colors ${isAbsent ? 'opacity-50' : ''}`}>
-                                            <td className="py-3 px-2">
-                                                <div className="flex items-center gap-2">
-                                                    {r.profile_picture ? (
-                                                        <img src={r.profile_picture} alt={r.name} className="w-7 h-7 rounded-lg shrink-0 object-cover" />
-                                                    ) : (
-                                                        <div className="w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-bold text-xs shrink-0">
-                                                            {r.name?.charAt(0)}
+                    <>
+                        {/* Desktop Table View */}
+                        <div className="hidden md:block overflow-x-auto">
+                            <table className="w-full text-left">
+                                <thead>
+                                    <tr className="border-b border-gray-100">
+                                        {['Employee', 'Login', 'Logout', 'Task', 'Status', 'Progress'].map(h => (
+                                            <th key={h} className="pb-3 px-2 text-xs font-bold text-gray-400 uppercase tracking-wider">{h}</th>
+                                        ))}
+                                    </tr>
+                                </thead>
+                                <tbody className="divide-y divide-gray-50">
+                                    {todayReport.map((r, i) => {
+                                        const s = STATUS_COLORS[r.status];
+                                        const isAbsent = r.login_time === 'N/A';
+                                        return (
+                                            <tr key={i} className={`hover:bg-gray-50 transition-colors ${isAbsent ? 'opacity-50' : ''}`}>
+                                                <td className="py-3 px-2">
+                                                    <div className="flex items-center gap-2">
+                                                        {r.profile_picture ? (
+                                                            <img src={r.profile_picture} alt={r.name} className="w-7 h-7 rounded-lg shrink-0 object-cover" />
+                                                        ) : (
+                                                            <div className="w-7 h-7 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-bold text-xs shrink-0">
+                                                                {r.name?.charAt(0)}
+                                                            </div>
+                                                        )}
+                                                        <div>
+                                                            <p className="font-semibold text-gray-800 text-sm whitespace-nowrap">{r.full_name || r.name}</p>
+                                                            <p className="text-[10px] text-gray-400">#{r.emp_no}</p>
                                                         </div>
-                                                    )}
-                                                    <div>
-                                                        <p className="font-semibold text-gray-800 text-sm whitespace-nowrap">{r.full_name || r.name}</p>
-                                                        <p className="text-[10px] text-gray-400">#{r.emp_no}</p>
                                                     </div>
+                                                </td>
+                                                <td className="py-3 px-2 text-sm text-gray-600">
+                                                    {r.login_time !== 'N/A' ? r.login_time : <span className="text-red-400 text-xs font-semibold">Absent</span>}
+                                                </td>
+                                                <td className="py-3 px-2 text-sm text-gray-600">
+                                                    {r.logout_time !== 'N/A' ? r.logout_time : r.login_time !== 'N/A' ? <span className="text-amber-500 text-xs font-semibold">Active</span> : '-'}
+                                                </td>
+                                                <td className="py-3 px-2 text-sm text-gray-700 max-w-[140px]">
+                                                    {r.title !== 'No Task' ? (
+                                                        <div className="flex flex-col">
+                                                            <span className="truncate">{r.title}</span>
+                                                            <div className="flex flex-wrap gap-1 mt-1">
+                                                                <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${r.assigned_date === today ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-100 text-amber-700'}`}>
+                                                                    Assigned: {r.assigned_date}
+                                                                </span>
+                                                                {r.is_self_assigned && (
+                                                                    <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                                                        Self Added
+                                                                    </span>
+                                                                )}
+                                                                {r.due_date < today && r.status !== 'completed' && (
+                                                                    <span className="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                                                        Overdue
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    ) : <span className="text-gray-300">—</span>}
+                                                </td>
+                                                <td className="py-3 px-2">
+                                                    {s ? (
+                                                        <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${s.bg} ${s.text}`}>
+                                                            {r.status.replace('_', ' ')}
+                                                        </span>
+                                                    ) : <span className="text-gray-300 text-xs">—</span>}
+                                                </td>
+                                                <td className="py-3 px-2">
+                                                    <div className="flex items-center gap-2 min-w-[70px]">
+                                                        <div className="flex-1 bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                                            <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${r.completion_percentage || 0}%` }} />
+                                                        </div>
+                                                        <span className="text-xs font-bold text-gray-600">{r.completion_percentage || 0}%</span>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        );
+                                    })}
+                                </tbody>
+                            </table>
+                        </div>
+
+                        {/* Mobile Card Layout */}
+                        <div className="md:hidden space-y-4">
+                            {todayReport.map((r, i) => {
+                                const s = STATUS_COLORS[r.status];
+                                const isAbsent = r.login_time === 'N/A';
+                                return (
+                                    <div key={i} className={`p-4 rounded-xl border border-gray-100 ${isAbsent ? 'bg-gray-50 opacity-70' : 'bg-white shadow-sm'}`}>
+                                        <div className="flex justify-between items-start mb-3">
+                                            <div className="flex items-center gap-3">
+                                                {r.profile_picture ? (
+                                                    <img src={r.profile_picture} alt={r.name} className="w-10 h-10 rounded-lg shrink-0 object-cover shadow-sm" />
+                                                ) : (
+                                                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-bold text-sm shrink-0">
+                                                        {r.name?.charAt(0)}
+                                                    </div>
+                                                )}
+                                                <div>
+                                                    <p className="font-bold text-gray-800 text-sm">{r.full_name || r.name}</p>
+                                                    <p className="text-[10px] text-gray-400">#{r.emp_no}</p>
                                                 </div>
-                                            </td>
-                                            <td className="py-3 px-2 text-sm text-gray-600">
-                                                {r.login_time !== 'N/A' ? r.login_time : <span className="text-red-400 text-xs font-semibold">Absent</span>}
-                                            </td>
-                                            <td className="py-3 px-2 text-sm text-gray-600">
-                                                {r.logout_time !== 'N/A' ? r.logout_time : r.login_time !== 'N/A' ? <span className="text-amber-500 text-xs font-semibold">Active</span> : '-'}
-                                            </td>
-                                            <td className="py-3 px-2 text-sm text-gray-700 max-w-[140px]">
-                                                {r.title !== 'No Task' ? (
-                                                    <div className="flex flex-col">
-                                                        <span className="truncate">{r.title}</span>
-                                                        <div className="flex flex-wrap gap-1 mt-1">
-                                                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${r.assigned_date === today ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-100 text-amber-700'}`}>
-                                                                Assigned: {r.assigned_date}
-                                                            </span>
-                                                            {r.is_self_assigned && (
-                                                                <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                                                                    Self Added
-                                                                </span>
-                                                            )}
-                                                            {r.due_date < today && r.status !== 'completed' && (
-                                                                <span className="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
-                                                                    Overdue
-                                                                </span>
-                                                            )}
-                                                        </div>
-                                                    </div>
-                                                ) : <span className="text-gray-300">—</span>}
-                                            </td>
-                                            <td className="py-3 px-2">
+                                            </div>
+                                            <div className="text-right">
                                                 {s ? (
                                                     <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${s.bg} ${s.text}`}>
                                                         {r.status.replace('_', ' ')}
                                                     </span>
                                                 ) : <span className="text-gray-300 text-xs">—</span>}
-                                            </td>
-                                            <td className="py-3 px-2">
-                                                <div className="flex items-center gap-2 min-w-[70px]">
-                                                    <div className="flex-1 bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                                                        <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${r.completion_percentage || 0}%` }} />
-                                                    </div>
-                                                    <span className="text-xs font-bold text-gray-600">{r.completion_percentage || 0}%</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="grid grid-cols-2 gap-3 mb-3">
+                                            <div className="bg-gray-50 p-2 rounded-lg">
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Login</p>
+                                                <p className="text-xs font-semibold text-gray-700">{r.login_time !== 'N/A' ? r.login_time : 'Absent'}</p>
+                                            </div>
+                                            <div className="bg-gray-50 p-2 rounded-lg">
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase mb-0.5">Logout</p>
+                                                <p className="text-xs font-semibold text-gray-700">{r.logout_time !== 'N/A' ? r.logout_time : r.login_time !== 'N/A' ? 'Active' : '-'}</p>
+                                            </div>
+                                        </div>
+
+                                        {r.title !== 'No Task' && (
+                                            <div className="mb-3">
+                                                <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Current Task</p>
+                                                <p className="text-xs font-bold text-gray-700">{r.title}</p>
+                                                <div className="flex flex-wrap gap-1 mt-1.5">
+                                                    <span className={`text-[8px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${r.assigned_date === today ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-100 text-amber-700'}`}>
+                                                        Assigned: {r.assigned_date}
+                                                    </span>
+                                                    {r.is_self_assigned && (
+                                                        <span className="text-[8px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                                            Self Added
+                                                        </span>
+                                                    )}
+                                                    {r.due_date < today && r.status !== 'completed' && (
+                                                        <span className="text-[8px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                                            Overdue
+                                                        </span>
+                                                    )}
                                                 </div>
-                                            </td>
-                                        </tr>
-                                    );
-                                })}
-                            </tbody>
-                        </table>
-                    </div>
+                                            </div>
+                                        )}
+
+                                        <div>
+                                            <div className="flex justify-between items-center mb-1">
+                                                <span className="text-[9px] font-bold text-gray-400 uppercase">Progress</span>
+                                                <span className="text-[10px] font-bold text-indigo-600">{r.completion_percentage || 0}%</span>
+                                            </div>
+                                            <div className="w-full bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                                <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${r.completion_percentage || 0}%` }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </>
                 )}
             </div>
 

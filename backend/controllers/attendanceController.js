@@ -85,20 +85,46 @@ const getWorkDuration = async (req, res) => {
         const attendanceRows = await Attendance.find({
             emp_no,
             date: today
-        });
+        }).sort({ login_time: 1 });
 
-        let totalMilliseconds = 0;
+        if (attendanceRows.length === 0) {
+            return res.json({ totalMilliseconds: 0 });
+        }
+
         const now = new Date();
+        const intervals = attendanceRows.map(record => ({
+            start: new Date(record.login_time).getTime(),
+            end: record.logout_time ? new Date(record.logout_time).getTime() : now.getTime()
+        })).filter(interval => !isNaN(interval.start) && !isNaN(interval.end));
 
-        attendanceRows.forEach(record => {
-            const login = new Date(record.login_time);
-            const logout = record.logout_time ? new Date(record.logout_time) : now; // If no logout, use current time
+        if (intervals.length === 0) {
+            return res.json({ totalMilliseconds: 0 });
+        }
 
-            if (!isNaN(login.getTime()) && !isNaN(logout.getTime())) {
-                const diff = logout - login;
-                if (diff > 0) {
-                    totalMilliseconds += diff;
-                }
+        // Merge overlapping intervals
+        const mergedIntervals = [];
+        let currentInterval = intervals[0];
+
+        for (let i = 1; i < intervals.length; i++) {
+            const nextInterval = intervals[i];
+
+            if (nextInterval.start <= currentInterval.end) {
+                // Overlap: merge by extending the end time if necessary
+                currentInterval.end = Math.max(currentInterval.end, nextInterval.end);
+            } else {
+                // No overlap: push current and start a new one
+                mergedIntervals.push(currentInterval);
+                currentInterval = nextInterval;
+            }
+        }
+        mergedIntervals.push(currentInterval);
+
+        // Sum durations of merged intervals
+        let totalMilliseconds = 0;
+        mergedIntervals.forEach(interval => {
+            const diff = interval.end - interval.start;
+            if (diff > 0) {
+                totalMilliseconds += diff;
             }
         });
 

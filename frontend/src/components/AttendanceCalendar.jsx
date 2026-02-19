@@ -88,21 +88,36 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
                                 const dayTasks = getTasksForDay(day);
                                 const dayLeaves = getLeavesForDay(day);
 
-                                // Calculate total duration for the day
+                                // Calculate total duration for the day using interval merging
                                 let totalMs = 0;
-                                attendanceRecords.forEach(record => {
-                                    if (record.login_time && record.logout_time) {
-                                        const diff = new Date(record.logout_time) - new Date(record.login_time);
-                                        if (diff > 0) totalMs += diff;
-                                    } else if (record.login_time && !record.logout_time && isSameDay(new Date(), day)) {
-                                        // For today's open session, we could optionally show "Running" or add current duration
-                                        // But for calendar history, usually we just show completed or specific status
-                                        // Let's just track closed sessions for history totals to be safe,
-                                        // or if it's today, we might want to skip adding "running" time here to avoid confusion
-                                        // as it updates live elsewhere.
-                                        // Let's stick to closed sessions for the total to avoid "future" math issues.
+                                if (attendanceRecords.length > 0) {
+                                    const now = new Date();
+                                    const isDayToday = isSameDay(now, day);
+
+                                    const intervals = attendanceRecords.map(r => ({
+                                        start: new Date(r.login_time).getTime(),
+                                        end: r.logout_time ? new Date(r.logout_time).getTime() :
+                                            (isDayToday ? now.getTime() : new Date(r.login_time).getTime())
+                                    })).filter(i => !isNaN(i.start) && !isNaN(i.end));
+
+                                    if (intervals.length > 0) {
+                                        intervals.sort((a, b) => a.start - b.start);
+                                        const merged = [];
+                                        let current = intervals[0];
+
+                                        for (let i = 1; i < intervals.length; i++) {
+                                            const next = intervals[i];
+                                            if (next.start <= current.end) {
+                                                current.end = Math.max(current.end, next.end);
+                                            } else {
+                                                merged.push(current);
+                                                current = next;
+                                            }
+                                        }
+                                        merged.push(current);
+                                        totalMs = merged.reduce((acc, i) => acc + (i.end - i.start), 0);
                                     }
-                                });
+                                }
 
                                 const hours = Math.floor(totalMs / 3600000);
                                 const minutes = Math.floor((totalMs % 3600000) / 60000);
@@ -181,14 +196,34 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
                                 <span className="text-[8px] font-black uppercase tracking-tighter leading-none opacity-80">Total Duration</span>
                                 <span className="text-sm font-black font-mono leading-tight">
                                     {(() => {
-                                        let totalMs = 0;
-                                        dayAttendance.forEach(r => {
-                                            if (r.login_time && r.logout_time) {
-                                                totalMs += new Date(r.logout_time) - new Date(r.login_time);
-                                            } else if (r.login_time && isToday(selectedDate)) {
-                                                totalMs += new Date() - new Date(r.login_time);
+                                        if (dayAttendance.length === 0) return "0h 0m";
+
+                                        const now = new Date();
+                                        const intervals = dayAttendance.map(r => ({
+                                            start: new Date(r.login_time).getTime(),
+                                            end: r.logout_time ? new Date(r.logout_time).getTime() :
+                                                (isToday(selectedDate) ? now.getTime() : new Date(r.login_time).getTime())
+                                        })).filter(i => !isNaN(i.start) && !isNaN(i.end));
+
+                                        if (intervals.length === 0) return "0h 0m";
+
+                                        // Sort and Merge
+                                        intervals.sort((a, b) => a.start - b.start);
+                                        const merged = [];
+                                        let current = intervals[0];
+
+                                        for (let i = 1; i < intervals.length; i++) {
+                                            const next = intervals[i];
+                                            if (next.start <= current.end) {
+                                                current.end = Math.max(current.end, next.end);
+                                            } else {
+                                                merged.push(current);
+                                                current = next;
                                             }
-                                        });
+                                        }
+                                        merged.push(current);
+
+                                        let totalMs = merged.reduce((acc, i) => acc + (i.end - i.start), 0);
                                         const h = Math.floor(totalMs / 3600000);
                                         const m = Math.floor((totalMs % 3600000) / 60000);
                                         return `${h}h ${m}m`;

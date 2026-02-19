@@ -226,10 +226,10 @@ const DashboardLayout = () => {
             {/* Main Content */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Header */}
-                <header className="h-20 bg-white border-b border-gray-200 flex items-center justify-between px-6 sticky top-0 z-10 shadow-sm">
-                    <div className="flex items-center md:hidden gap-3">
+                <header className="h-16 md:h-20 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 shadow-sm">
+                    <div className="flex items-center md:hidden gap-2">
                         <img src="/logo.jpg" alt="StackVil" className="h-8 w-8 rounded-lg object-cover shadow-sm" />
-                        <span className="text-lg font-bold text-gray-800">StackVil</span>
+                        <span className="text-base font-bold text-gray-800">StackVil</span>
                     </div>
                     <div className="hidden md:block">
                         <h2 className="text-xl font-bold text-gray-800">
@@ -237,27 +237,27 @@ const DashboardLayout = () => {
                         </h2>
                     </div>
 
-                    <div className="flex items-center gap-6">
+                    <div className="flex items-center gap-3 md:gap-6">
                         <LiveClock />
-                        <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-2 md:gap-4">
                             <button className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors relative">
-                                <Bell className="w-6 h-6" />
-                                <span className="absolute top-2 right-2 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
+                                <Bell className="w-5 h-5 md:w-6 md:h-6" />
+                                <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full border-2 border-white"></span>
                             </button>
-                            <div className="h-8 w-px bg-gray-200 mx-2"></div>
-                            <div className="flex items-center gap-3">
+                            <div className="h-6 w-px bg-gray-200 mx-1 md:mx-2"></div>
+                            <div className="flex items-center gap-2 md:gap-3">
                                 <div className="text-right hidden sm:block">
-                                    <p className="text-sm font-bold text-gray-800">{user?.full_name || user?.name}</p>
-                                    <p className="text-xs text-gray-500 capitalize">{user?.role}</p>
+                                    <p className="text-xs md:text-sm font-bold text-gray-800">{user?.full_name || user?.name}</p>
+                                    <p className="text-[10px] md:text-xs text-gray-500 capitalize">{user?.role}</p>
                                 </div>
                                 {user?.profile_picture ? (
                                     <img
                                         src={user.profile_picture}
                                         alt={user.name}
-                                        className="w-10 h-10 rounded-full border-2 border-indigo-200 object-cover shadow-sm"
+                                        className="w-8 h-8 md:w-10 md:h-10 rounded-full border-2 border-indigo-200 object-cover shadow-sm"
                                     />
                                 ) : (
-                                    <div className="w-10 h-10 bg-indigo-100 border-2 border-indigo-200 rounded-full flex items-center justify-center text-indigo-600 font-bold shadow-inner">
+                                    <div className="w-8 h-8 md:w-10 md:h-10 bg-indigo-100 border-2 border-indigo-200 rounded-full flex items-center justify-center text-indigo-600 text-xs md:text-base font-bold shadow-inner">
                                         {(user?.full_name || user?.name)?.charAt(0)}
                                     </div>
                                 )}
@@ -267,7 +267,7 @@ const DashboardLayout = () => {
                 </header>
 
                 {/* Content Area */}
-                <div className="flex-1 overflow-y-auto p-6 bg-gray-50">
+                <div className="flex-1 overflow-y-auto p-4 md:p-6 bg-gray-50">
                     <Outlet />
                 </div>
             </main>

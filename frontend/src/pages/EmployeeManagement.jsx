@@ -207,28 +207,24 @@ const EmployeeManagement = () => {
             )}
 
             {/* Filters */}
-            <div className="flex flex-col md:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
-                <div className="relative w-full md:w-96">
+            <div className="flex flex-col sm:flex-row gap-4 items-center justify-between bg-white p-4 rounded-2xl border border-gray-100 shadow-sm">
+                <div className="relative w-full sm:w-96">
                     <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400" />
                     <input
                         type="text"
                         placeholder="Search by name or ID..."
                         value={searchTerm}
                         onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                        className="w-full pl-10 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all text-sm"
                     />
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-2 w-full sm:w-auto">
                     <button
                         onClick={() => setShowCreateModal(true)}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-all flex items-center gap-2"
+                        className="flex-1 sm:flex-none px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-all flex items-center justify-center gap-2 text-sm"
                     >
                         <Plus className="w-4 h-4" />
-                        Create Employee
-                    </button>
-                    <button className="px-4 py-2 border border-gray-200 rounded-xl text-gray-600 font-medium hover:bg-gray-50 transition-all flex items-center gap-2">
-                        <Filter className="w-4 h-4" />
-                        Filter
+                        <span className="whitespace-nowrap">Create Employee</span>
                     </button>
                 </div>
             </div>
@@ -259,23 +255,23 @@ const EmployeeManagement = () => {
                                     {emp.status}
                                 </span>
                             </div>
-                            <h3 className="text-lg font-bold text-gray-800 group-hover:text-indigo-600 transition-colors">{emp.full_name || emp.name}</h3>
+                            <h3 className="text-lg font-bold text-gray-800 group-hover:text-indigo-600 transition-colors uppercase truncate">{emp.full_name || emp.name}</h3>
                             <p className="text-sm text-gray-500 font-medium mt-0.5">@{emp.name} · ID: {emp.emp_no}</p>
                             <div className="mt-6 space-y-3">
                                 <div className="flex items-center gap-3 text-sm text-gray-600">
-                                    <Mail className="w-4 h-4 text-gray-400" />
-                                    {emp.email}
+                                    <Mail className="w-4 h-4 text-gray-400 shrink-0" />
+                                    <span className="truncate">{emp.email}</span>
                                 </div>
                                 <div className="flex items-center gap-3 text-sm text-gray-600">
-                                    <Shield className="w-4 h-4 text-gray-400" />
+                                    <Shield className="w-4 h-4 text-gray-400 shrink-0" />
                                     <span className="capitalize">{emp.role}</span>
                                 </div>
                             </div>
                         </div>
-                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-50 flex justify-between gap-2">
+                        <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap justify-between gap-2">
                             <button
                                 onClick={() => setShowDeleteModal(emp.emp_no)}
-                                className="text-sm font-bold text-red-600 hover:text-red-700 px-3 py-1 rounded-lg hover:bg-red-50 transition-all flex items-center gap-1"
+                                className="text-xs font-bold text-red-600 hover:text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all flex items-center gap-1"
                             >
                                 <Trash2 className="w-3 h-3" />
                                 Delete
@@ -283,17 +279,17 @@ const EmployeeManagement = () => {
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => fetchEmployeeAttendance(emp.emp_no)}
-                                    className="text-sm font-bold text-indigo-600 hover:text-indigo-700 px-3 py-1 rounded-lg hover:bg-indigo-50 transition-all flex items-center gap-1"
+                                    className="text-xs font-bold text-indigo-600 hover:text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition-all flex items-center gap-1"
                                 >
                                     <Calendar className="w-3 h-3" />
                                     Attendance
                                 </button>
                                 <button
                                     onClick={() => { setShowAssignModal(emp.emp_no); setError(''); }}
-                                    className="text-sm font-bold text-gray-600 hover:text-gray-700 px-3 py-1 rounded-lg hover:bg-gray-100 transition-all flex items-center gap-1"
+                                    className="text-xs font-bold text-gray-600 hover:text-gray-700 px-3 py-1.5 rounded-lg hover:bg-gray-100 transition-all flex items-center gap-1"
                                 >
                                     <Briefcase className="w-3 h-3" />
-                                    Assign Task
+                                    Assign
                                 </button>
                             </div>
                         </div>
@@ -304,7 +300,7 @@ const EmployeeManagement = () => {
             {/* ── Assigned Tasks Section ── */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
                 <div
-                    className="p-5 flex justify-between items-center cursor-pointer hover:bg-gray-50 transition-colors"
+                    className="p-5 flex flex-col sm:flex-row justify-between items-start sm:items-center cursor-pointer hover:bg-gray-50 transition-colors gap-4"
                     onClick={() => setShowTasksSection(v => !v)}
                 >
                     <div className="flex items-center gap-3">
@@ -314,13 +310,14 @@ const EmployeeManagement = () => {
                             <span className="ml-2 text-sm font-normal text-gray-400">({adminTasks.length})</span>
                         </h2>
                     </div>
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 w-full sm:w-auto overflow-hidden">
                         <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-2 py-1 bg-white">
                             <Calendar className="w-3 h-3 text-gray-400" />
                             <input
                                 type="date"
                                 value={filterDate}
                                 onChange={(e) => setFilterDate(e.target.value)}
+                                onClick={(e) => e.stopPropagation()}
                                 className="text-xs outline-none bg-transparent font-medium text-gray-600"
                             />
                             {filterDate && (
@@ -332,13 +329,7 @@ const EmployeeManagement = () => {
                                 </button>
                             )}
                         </div>
-                        <button
-                            onClick={(e) => { e.stopPropagation(); fetchAdminTasks(filterDate); }}
-                            className="text-xs text-indigo-600 hover:underline font-medium"
-                        >
-                            Refresh
-                        </button>
-                        {showTasksSection ? <ChevronUp className="w-5 h-5 text-gray-400" /> : <ChevronDown className="w-5 h-5 text-gray-400" />}
+                        {showTasksSection ? <ChevronUp className="w-5 h-5 text-gray-400 shrink-0" /> : <ChevronDown className="w-5 h-5 text-gray-400 shrink-0" />}
                     </div>
                 </div>
 
@@ -349,345 +340,323 @@ const EmployeeManagement = () => {
                         ) : adminTasks.length === 0 ? (
                             <div className="p-8 text-center text-gray-400">No tasks assigned yet</div>
                         ) : (
-                            <div className="divide-y divide-gray-50">
+                            <div className="divide-y divide-gray-50 overflow-hidden">
                                 {adminTasks.map(task => {
                                     const badge = getStatusBadge(task.status);
                                     const BadgeIcon = badge.icon;
                                     return (
-                                        <div key={task.id} className="p-4 flex items-start gap-4 hover:bg-gray-50 transition-colors">
-                                            <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${badge.bg} ${badge.text}`}>
-                                                <BadgeIcon className="w-4 h-4" />
-                                            </div>
-                                            <div className="flex-1 min-w-0">
-                                                <div className="flex items-center gap-2 flex-wrap">
-                                                    <span className="font-bold text-gray-800 text-sm">{task.title}</span>
-                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${badge.bg} ${badge.text}`}>
-                                                        {badge.label}
-                                                    </span>
-                                                    <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-indigo-50 text-indigo-600">
-                                                        {task.task_type === 'daily' ? 'Daily' : 'Custom'}
-                                                    </span>
-                                                    <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${task.is_self_assigned ? 'bg-purple-100 text-purple-700' : 'bg-cyan-100 text-cyan-700'}`}>
-                                                        {task.is_self_assigned ? 'Self Added' : 'Admin Assigned'}
-                                                    </span>
-                                                    <div className="flex items-center gap-2 mt-0.5">
-                                                        <p className="text-[11px] text-gray-500 italic">
-                                                            Assigned: <span className="font-semibold text-indigo-600">{task.assigned_date}</span>
-                                                            {' · '}Due: <span className="font-semibold">{task.due_date}</span>
-                                                        </p>
+                                        <div key={task.id} className="p-4 flex flex-col sm:flex-row items-start gap-4 hover:bg-gray-50 transition-colors">
+                                            <div className="flex items-center gap-4 w-full">
+                                                <div className={`w-9 h-9 rounded-full flex items-center justify-center flex-shrink-0 ${badge.bg} ${badge.text}`}>
+                                                    <BadgeIcon className="w-4 h-4" />
+                                                </div>
+                                                <div className="flex-1 min-w-0">
+                                                    <div className="flex items-center gap-2 flex-wrap mb-1">
+                                                        <span className="font-bold text-gray-800 text-sm truncate">{task.title}</span>
+                                                        <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase ${badge.bg} ${badge.text}`}>
+                                                            {badge.label}
+                                                        </span>
+                                                        <span className="text-[9px] px-2 py-0.5 rounded-full font-bold uppercase bg-indigo-50 text-indigo-600">
+                                                            {task.task_type === 'daily' ? 'Daily' : 'Custom'}
+                                                        </span>
+                                                        {task.is_self_assigned && (
+                                                            <span className="text-[9px] bg-purple-100 text-purple-700 px-2 py-0.5 rounded-full font-bold uppercase">
+                                                                Self
+                                                            </span>
+                                                        )}
                                                         {task.due_date < new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) && task.status !== 'completed' && (
-                                                            <span className="text-[9px] bg-red-50 text-red-600 px-1.5 py-0.5 rounded border border-red-100 font-bold uppercase tracking-wider h-fit">
+                                                            <span className="text-[9px] bg-red-50 text-red-600 px-2 py-0.5 rounded-full font-bold uppercase">
                                                                 Postponed
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <p className="text-xs text-gray-400 mt-1">
-                                                        Employee: <span className="font-semibold text-gray-600">{task.emp_name}</span>
+                                                    <p className="text-[11px] text-gray-500 italic mb-1">
+                                                        {task.emp_name} · Due: {task.due_date}
                                                     </p>
                                                     {task.description && (
-                                                        <p className="text-xs text-gray-500 mt-1 line-clamp-1">{task.description}</p>
-                                                    )}
-                                                    {task.status === 'declined' && task.reason && (
-                                                        <div className="mt-2 bg-red-50 border border-red-200 rounded-lg px-3 py-2">
-                                                            <p className="text-xs text-red-700 font-medium">
-                                                                Decline reason: <span className="font-normal">{task.reason}</span>
-                                                            </p>
-                                                        </div>
+                                                        <p className="text-xs text-gray-500 line-clamp-1">{task.description}</p>
                                                     )}
                                                 </div>
-                                                <div className="flex flex-col items-end gap-2 flex-shrink-0">
-                                                    {/* Completion bar */}
-                                                    <div className="flex items-center gap-2">
-                                                        <div className="w-20 bg-gray-100 h-1.5 rounded-full overflow-hidden">
-                                                            <div
-                                                                className={`h-full transition-all ${task.status === 'completed' ? 'bg-green-500' : 'bg-indigo-500'}`}
-                                                                style={{ width: `${task.completion_percentage}%` }}
-                                                            />
-                                                        </div>
-                                                        <span className="text-xs font-bold text-gray-600">{task.completion_percentage}%</span>
+                                            </div>
+
+                                            <div className="flex items-center justify-between w-full sm:w-auto sm:flex-col sm:items-end gap-2 mt-2 sm:mt-0 pt-2 sm:pt-0 border-t sm:border-t-0 border-gray-50">
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-16 bg-gray-100 h-1.5 rounded-full overflow-hidden">
+                                                        <div
+                                                            className={`h-full transition-all ${task.status === 'completed' ? 'bg-green-500' : 'bg-indigo-500'}`}
+                                                            style={{ width: `${task.completion_percentage}%` }}
+                                                        />
                                                     </div>
-                                                    {/* Approve/Reject decline buttons */}
+                                                    <span className="text-xs font-bold text-gray-600">{task.completion_percentage}%</span>
+                                                </div>
+
+                                                <div className="flex gap-2">
                                                     {task.status === 'declined' && (
-                                                        <div className="flex gap-2">
-                                                            <button
-                                                                onClick={() => handleRespondToDecline(task.id, 'approve')}
-                                                                className="text-[10px] px-3 py-1.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-semibold"
-                                                            >
-                                                                Approve Decline
-                                                            </button>
-                                                            <button
-                                                                onClick={() => setShowRejectNoteModal(task.id)}
-                                                                className="text-[10px] px-3 py-1.5 bg-red-100 text-red-700 rounded-lg hover:bg-red-200 transition-all font-semibold"
-                                                            >
-                                                                Reject Decline
-                                                            </button>
-                                                        </div>
+                                                        <button
+                                                            onClick={() => handleRespondToDecline(task.id, 'approve')}
+                                                            className="text-[10px] px-2 py-1 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all font-semibold"
+                                                        >
+                                                            Approve
+                                                        </button>
                                                     )}
-                                                    {task.admin_note && task.status !== 'declined' && (
-                                                        <div className="mt-1 flex items-center gap-1 text-[10px] text-indigo-600 font-medium bg-indigo-50 px-2 py-0.5 rounded">
-                                                            <AlertCircle className="w-3 h-3" />
-                                                            Admin Note: {task.admin_note}
-                                                        </div>
-                                                    )}
-                                                    {/* Delete Task Button */}
                                                     <button
                                                         onClick={() => setShowDeleteTaskModal(task.id)}
-                                                        className="mt-1 flex items-center gap-1 text-[10px] text-red-600 font-bold hover:bg-red-50 px-2 py-1 rounded transition-colors"
+                                                        className="text-[10px] text-red-600 font-bold hover:bg-red-50 px-2 py-1 rounded transition-colors flex items-center gap-1"
                                                     >
                                                         <Trash2 className="w-3 h-3" />
                                                         Delete
                                                     </button>
                                                 </div>
                                             </div>
-                                            );
-                                })}
                                         </div>
-                                    )
-                                }
-                    </div>
+                                    );
+                                })}
+                            </div>
                         )}
                     </div>
+                )}
+            </div>
 
             {/* Create Employee Modal */}
-                <AnimatePresence>
-                    {showCreateModal && (
-                        <Modal
-                            title="Create New Employee"
-                            onClose={() => { setShowCreateModal(false); setCreateForm({ emp_no: '', name: '', full_name: '', email: '', password: '', role: 'employee' }); setError(''); }}
-                        >
-                            {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">{error}</div>}
-                            <form onSubmit={handleCreateEmployee} className="space-y-4">
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Employee ID</label>
-                                    <input type="text" required value={createForm.emp_no} onChange={(e) => setCreateForm({ ...createForm, emp_no: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g., EMP001" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Username (Login Name)</label>
-                                    <input type="text" required value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. sonali" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
-                                    <input type="text" required value={createForm.full_name} onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Sonali Kumari" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
-                                    <input type="email" required value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="email@company.com" />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Password</label>
-                                    <input type="password" required value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Minimum 6 characters" minLength={6} />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Role</label>
-                                    <select value={createForm.role} onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
-                                        <option value="employee">Employee</option>
-                                        <option value="admin">Admin</option>
-                                    </select>
-                                </div>
-                                <div className="flex gap-3 pt-4">
-                                    <button type="button" onClick={() => { setShowCreateModal(false); setError(''); }} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
-                                    <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-all">Create Employee</button>
-                                </div>
-                            </form>
-                        </Modal>
-                    )}
-                </AnimatePresence>
-
-                {/* Assign Task Modal — simplified, no dates/percentage */}
-                <AnimatePresence>
-                    {showAssignModal && (
-                        <Modal
-                            title={`Assign Task to ${employees.find(e => e.emp_no === showAssignModal)?.name || showAssignModal}`}
-                            onClose={() => { setShowAssignModal(null); setAssignForm({ title: '', description: '', task_type: 'daily', due_date: '' }); setError(''); }}
-                        >
-                            {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">{error}</div>}
-                            <form onSubmit={(e) => handleAssignTask(e, showAssignModal)} className="space-y-4">
-                                {/* Task Type Toggle */}
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-2">Task Type</label>
-                                    <div className="flex gap-3">
-                                        <button
-                                            type="button"
-                                            onClick={() => setAssignForm({ ...assignForm, task_type: 'daily', due_date: '' })}
-                                            className={`flex-1 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex flex-col items-center gap-1 ${assignForm.task_type === 'daily' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
-                                        >
-                                            <Clock className="w-5 h-5" />
-                                            Daily Task
-                                            <span className="text-[10px] font-normal opacity-70">Due today</span>
-                                        </button>
-                                        <button
-                                            type="button"
-                                            onClick={() => setAssignForm({ ...assignForm, task_type: 'custom' })}
-                                            className={`flex-1 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex flex-col items-center gap-1 ${assignForm.task_type === 'custom' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
-                                        >
-                                            <Calendar className="w-5 h-5" />
-                                            Custom Date
-                                            <span className="text-[10px] font-normal opacity-70">Pick a due date</span>
-                                        </button>
-                                    </div>
-                                </div>
-
-                                {/* Due date — only for custom */}
-                                {assignForm.task_type === 'custom' && (
-                                    <div>
-                                        <label className="block text-sm font-semibold text-gray-700 mb-1">Due Date</label>
-                                        <input
-                                            type="date"
-                                            required
-                                            min={today}
-                                            value={assignForm.due_date}
-                                            onChange={(e) => setAssignForm({ ...assignForm, due_date: e.target.value })}
-                                            className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-                                        />
-                                    </div>
-                                )}
-
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Task Title</label>
-                                    <input
-                                        type="text"
-                                        required
-                                        value={assignForm.title}
-                                        onChange={(e) => setAssignForm({ ...assignForm, title: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-                                        placeholder="Enter task title"
-                                    />
-                                </div>
-                                <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>
-                                    <textarea
-                                        value={assignForm.description}
-                                        onChange={(e) => setAssignForm({ ...assignForm, description: e.target.value })}
-                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
-                                        placeholder="Task description..."
-                                        rows={3}
-                                    />
-                                </div>
-
-                                <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
-                                    <strong>Note:</strong> The employee will see this task and can accept or decline it. Only the employee can update the completion percentage.
-                                </div>
-
-                                <div className="flex gap-3 pt-2">
-                                    <button type="button" onClick={() => { setShowAssignModal(null); setError(''); }} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
-                                    <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-all">Assign Task</button>
-                                </div>
-                            </form>
-                        </Modal>
-                    )}
-                </AnimatePresence>
-
-                {/* Attendance View Modal */}
-                <AnimatePresence>
-                    {showAttendanceModal && (
-                        <Modal
-                            title={`Attendance History - ${showAttendanceModal}`}
-                            onClose={() => { setShowAttendanceModal(null); setEmployeeAttendance([]); }}
-                            wide
-                        >
-                            <div className="max-h-[80vh] overflow-y-auto pr-2">
-                                <AttendanceCalendar
-                                    attendanceHistory={employeeAttendance}
-                                    tasks={employeeTasks}
-                                    leaves={employeeLeaves}
-                                />
+            <AnimatePresence>
+                {showCreateModal && (
+                    <Modal
+                        title="Create New Employee"
+                        onClose={() => { setShowCreateModal(false); setCreateForm({ emp_no: '', name: '', full_name: '', email: '', password: '', role: 'employee' }); setError(''); }}
+                    >
+                        {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">{error}</div>}
+                        <form onSubmit={handleCreateEmployee} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Employee ID</label>
+                                <input type="text" required value={createForm.emp_no} onChange={(e) => setCreateForm({ ...createForm, emp_no: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g., EMP001" />
                             </div>
-                        </Modal>
-                    )}
-                </AnimatePresence>
-
-                {/* Delete Confirmation Modal */}
-                <AnimatePresence>
-                    {showDeleteModal && (
-                        <Modal title="Delete Employee" onClose={() => setShowDeleteModal(null)}>
-                            <div className="space-y-4">
-                                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                                    <p className="text-red-800 font-medium">Are you sure you want to delete employee <strong>{showDeleteModal}</strong>?</p>
-                                    <p className="text-red-600 text-sm mt-2">This action cannot be undone. All attendance records and tasks will be permanently deleted.</p>
-                                </div>
-                                <div className="flex gap-3 pt-2">
-                                    <button onClick={() => setShowDeleteModal(null)} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
-                                    <button onClick={() => handleDeleteEmployee(showDeleteModal)} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all">Delete Employee</button>
-                                </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Username (Login Name)</label>
+                                <input type="text" required value={createForm.name} onChange={(e) => setCreateForm({ ...createForm, name: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. sonali" />
                             </div>
-                        </Modal>
-                    )}
-                </AnimatePresence>
-                {/* Reject Decline Note Modal */}
-                <AnimatePresence>
-                    {showRejectNoteModal && (
-                        <Modal title="Reject Task Decline" onClose={() => { setShowRejectNoteModal(null); setRejectNote(''); }}>
-                            <div className="space-y-4">
-                                <p className="text-sm text-gray-600">
-                                    Please provide a reason for rejecting the decline. This will be shown to the employee.
-                                </p>
-                                <textarea
-                                    value={rejectNote}
-                                    onChange={(e) => setRejectNote(e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 outline-none"
-                                    placeholder="e.g. This task is priority for project X..."
-                                    rows={4}
-                                    autoFocus
-                                />
-                                <div className="flex gap-3 pt-2">
-                                    <button onClick={() => { setShowRejectNoteModal(null); setRejectNote(''); }} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                                <input type="text" required value={createForm.full_name} onChange={(e) => setCreateForm({ ...createForm, full_name: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="e.g. Sonali Kumari" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                                <input type="email" required value={createForm.email} onChange={(e) => setCreateForm({ ...createForm, email: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="email@company.com" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Password</label>
+                                <input type="password" required value={createForm.password} onChange={(e) => setCreateForm({ ...createForm, password: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Minimum 6 characters" minLength={6} />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Role</label>
+                                <select value={createForm.role} onChange={(e) => setCreateForm({ ...createForm, role: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option value="employee">Employee</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+                            <div className="flex gap-3 pt-4">
+                                <button type="button" onClick={() => { setShowCreateModal(false); setError(''); }} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                                <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-all">Create Employee</button>
+                            </div>
+                        </form>
+                    </Modal>
+                )}
+            </AnimatePresence>
+
+            {/* Assign Task Modal — simplified, no dates/percentage */}
+            < AnimatePresence >
+                {showAssignModal && (
+                    <Modal
+                        title={`Assign Task to ${employees.find(e => e.emp_no === showAssignModal)?.name || showAssignModal}`}
+                        onClose={() => { setShowAssignModal(null); setAssignForm({ title: '', description: '', task_type: 'daily', due_date: '' }); setError(''); }}
+                    >
+                        {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">{error}</div>}
+                        <form onSubmit={(e) => handleAssignTask(e, showAssignModal)} className="space-y-4">
+                            {/* Task Type Toggle */}
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-2">Task Type</label>
+                                <div className="flex gap-3">
                                     <button
-                                        onClick={() => handleRespondToDecline(showRejectNoteModal, 'reject', rejectNote)}
-                                        className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all"
+                                        type="button"
+                                        onClick={() => setAssignForm({ ...assignForm, task_type: 'daily', due_date: '' })}
+                                        className={`flex-1 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex flex-col items-center gap-1 ${assignForm.task_type === 'daily' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
                                     >
-                                        Confirm Reject
+                                        <Clock className="w-5 h-5" />
+                                        Daily Task
+                                        <span className="text-[10px] font-normal opacity-70">Due today</span>
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAssignForm({ ...assignForm, task_type: 'custom' })}
+                                        className={`flex-1 py-3 rounded-xl border-2 font-semibold text-sm transition-all flex flex-col items-center gap-1 ${assignForm.task_type === 'custom' ? 'border-indigo-500 bg-indigo-50 text-indigo-700' : 'border-gray-200 text-gray-500 hover:border-gray-300'}`}
+                                    >
+                                        <Calendar className="w-5 h-5" />
+                                        Custom Date
+                                        <span className="text-[10px] font-normal opacity-70">Pick a due date</span>
                                     </button>
                                 </div>
                             </div>
-                        </Modal>
-                    )}
-                </AnimatePresence>
 
-                {/* Delete Task Confirmation Modal */}
-                <AnimatePresence>
-                    {showDeleteTaskModal && (
-                        <Modal title="Delete Task" onClose={() => setShowDeleteTaskModal(null)}>
-                            <div className="space-y-4">
-                                <div className="bg-red-50 border border-red-200 rounded-xl p-4">
-                                    <p className="text-red-800 font-medium">Are you sure you want to delete this task?</p>
-                                    <p className="text-red-600 text-sm mt-2">This action cannot be undone. The task will be removed from the employee's dashboard.</p>
+                            {/* Due date — only for custom */}
+                            {assignForm.task_type === 'custom' && (
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-1">Due Date</label>
+                                    <input
+                                        type="date"
+                                        required
+                                        min={today}
+                                        value={assignForm.due_date}
+                                        onChange={(e) => setAssignForm({ ...assignForm, due_date: e.target.value })}
+                                        className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    />
                                 </div>
-                                <div className="flex gap-3 pt-2">
-                                    <button onClick={() => setShowDeleteTaskModal(null)} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
-                                    <button onClick={() => handleDeleteTask(showDeleteTaskModal)} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all">Delete Task</button>
-                                </div>
+                            )}
+
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Task Title</label>
+                                <input
+                                    type="text"
+                                    required
+                                    value={assignForm.title}
+                                    onChange={(e) => setAssignForm({ ...assignForm, title: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    placeholder="Enter task title"
+                                />
                             </div>
-                        </Modal>
-                    )}
-                </AnimatePresence>
-            </div>
-            );
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Description <span className="text-gray-400 font-normal">(optional)</span></label>
+                                <textarea
+                                    value={assignForm.description}
+                                    onChange={(e) => setAssignForm({ ...assignForm, description: e.target.value })}
+                                    className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none"
+                                    placeholder="Task description..."
+                                    rows={3}
+                                />
+                            </div>
+
+                            <div className="bg-blue-50 border border-blue-200 rounded-xl p-3 text-xs text-blue-700">
+                                <strong>Note:</strong> The employee will see this task and can accept or decline it. Only the employee can update the completion percentage.
+                            </div>
+
+                            <div className="flex gap-3 pt-2">
+                                <button type="button" onClick={() => { setShowAssignModal(null); setError(''); }} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                                <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-all">Assign Task</button>
+                            </div>
+                        </form>
+                    </Modal>
+                )}
+            </AnimatePresence >
+
+            {/* Attendance View Modal */}
+            < AnimatePresence >
+                {showAttendanceModal && (
+                    <Modal
+                        title={`Attendance History - ${showAttendanceModal}`}
+                        onClose={() => { setShowAttendanceModal(null); setEmployeeAttendance([]); }}
+                        wide
+                    >
+                        <div className="max-h-[80vh] overflow-y-auto pr-2">
+                            <AttendanceCalendar
+                                attendanceHistory={employeeAttendance}
+                                tasks={employeeTasks}
+                                leaves={employeeLeaves}
+                            />
+                        </div>
+                    </Modal>
+                )}
+            </AnimatePresence >
+
+            {/* Delete Confirmation Modal */}
+            < AnimatePresence >
+                {showDeleteModal && (
+                    <Modal title="Delete Employee" onClose={() => setShowDeleteModal(null)}>
+                        <div className="space-y-4">
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                                <p className="text-red-800 font-medium">Are you sure you want to delete employee <strong>{showDeleteModal}</strong>?</p>
+                                <p className="text-red-600 text-sm mt-2">This action cannot be undone. All attendance records and tasks will be permanently deleted.</p>
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button onClick={() => setShowDeleteModal(null)} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                                <button onClick={() => handleDeleteEmployee(showDeleteModal)} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all">Delete Employee</button>
+                            </div>
+                        </div>
+                    </Modal>
+                )}
+            </AnimatePresence >
+            {/* Reject Decline Note Modal */}
+            < AnimatePresence >
+                {showRejectNoteModal && (
+                    <Modal title="Reject Task Decline" onClose={() => { setShowRejectNoteModal(null); setRejectNote(''); }}>
+                        <div className="space-y-4">
+                            <p className="text-sm text-gray-600">
+                                Please provide a reason for rejecting the decline. This will be shown to the employee.
+                            </p>
+                            <textarea
+                                value={rejectNote}
+                                onChange={(e) => setRejectNote(e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-red-400 outline-none"
+                                placeholder="e.g. This task is priority for project X..."
+                                rows={4}
+                                autoFocus
+                            />
+                            <div className="flex gap-3 pt-2">
+                                <button onClick={() => { setShowRejectNoteModal(null); setRejectNote(''); }} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                                <button
+                                    onClick={() => handleRespondToDecline(showRejectNoteModal, 'reject', rejectNote)}
+                                    className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all"
+                                >
+                                    Confirm Reject
+                                </button>
+                            </div>
+                        </div>
+                    </Modal>
+                )}
+            </AnimatePresence >
+
+            {/* Delete Task Confirmation Modal */}
+            < AnimatePresence >
+                {showDeleteTaskModal && (
+                    <Modal title="Delete Task" onClose={() => setShowDeleteTaskModal(null)}>
+                        <div className="space-y-4">
+                            <div className="bg-red-50 border border-red-200 rounded-xl p-4">
+                                <p className="text-red-800 font-medium">Are you sure you want to delete this task?</p>
+                                <p className="text-red-600 text-sm mt-2">This action cannot be undone. The task will be removed from the employee's dashboard.</p>
+                            </div>
+                            <div className="flex gap-3 pt-2">
+                                <button onClick={() => setShowDeleteTaskModal(null)} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                                <button onClick={() => handleDeleteTask(showDeleteTaskModal)} className="flex-1 px-4 py-2 bg-red-600 text-white rounded-xl font-medium hover:bg-red-700 transition-all">Delete Task</button>
+                            </div>
+                        </div>
+                    </Modal>
+                )}
+            </AnimatePresence >
+        </div >
+    );
 };
 
-            const Modal = ({title, children, onClose, wide}) => (
-            <motion.div
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-                exit={{ opacity: 0 }}
-                className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-                onClick={onClose}
-            >
-                <motion.div
-                    initial={{ scale: 0.95, opacity: 0 }}
-                    animate={{ scale: 1, opacity: 1 }}
-                    exit={{ scale: 0.95, opacity: 0 }}
-                    onClick={(e) => e.stopPropagation()}
-                    className={`bg-white rounded-2xl shadow-2xl ${wide ? 'max-w-5xl' : 'max-w-md'} w-full p-6 max-h-[90vh] overflow-y-auto`}
-                >
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
-                        <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
-                            <X className="w-6 h-6" />
-                        </button>
-                    </div>
-                    {children}
-                </motion.div>
-            </motion.div>
-            );
+const Modal = ({ title, children, onClose, wide }) => (
+    <motion.div
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        exit={{ opacity: 0 }}
+        className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+        onClick={onClose}
+    >
+        <motion.div
+            initial={{ scale: 0.95, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            exit={{ scale: 0.95, opacity: 0 }}
+            onClick={(e) => e.stopPropagation()}
+            className={`bg-white rounded-2xl shadow-2xl ${wide ? 'max-w-5xl' : 'max-w-md'} w-full p-6 max-h-[90vh] overflow-y-auto`}
+        >
+            <div className="flex justify-between items-center mb-6">
+                <h2 className="text-2xl font-bold text-gray-800">{title}</h2>
+                <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+                    <X className="w-6 h-6" />
+                </button>
+            </div>
+            {children}
+        </motion.div>
+    </motion.div>
+);
 
-            export default EmployeeManagement;
+export default EmployeeManagement;

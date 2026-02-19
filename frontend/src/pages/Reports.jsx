@@ -176,7 +176,8 @@ const Reports = () => {
 // ── Report Table ─────────────────────────────────────────────────────────────
 const ReportTable = ({ reports }) => (
     <div className="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
-        <div className="overflow-x-auto">
+        {/* Desktop Table View */}
+        <div className="hidden md:block overflow-x-auto">
             <table className="w-full text-left">
                 <thead>
                     <tr className="bg-gray-50 border-b border-gray-100">
@@ -281,6 +282,84 @@ const ReportTable = ({ reports }) => (
                     })}
                 </tbody>
             </table>
+        </div>
+
+        {/* Mobile Card View */}
+        <div className="md:hidden divide-y divide-gray-100">
+            {reports.map((r, i) => {
+                const s = STATUS_COLORS[r.status] || STATUS_COLORS['N/A'];
+                const isAbsent = r.login_time === 'N/A';
+                return (
+                    <div key={i} className={`p-4 ${isAbsent ? 'bg-gray-50 opacity-70' : 'bg-white'}`}>
+                        <div className="flex justify-between items-start mb-4">
+                            <div className="flex items-center gap-3">
+                                {r.profile_picture ? (
+                                    <img src={r.profile_picture} alt={r.name} className="w-10 h-10 rounded-xl shrink-0 object-cover shadow-sm" />
+                                ) : (
+                                    <div className="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center text-indigo-700 font-bold text-sm shrink-0">
+                                        {r.name?.charAt(0)}
+                                    </div>
+                                )}
+                                <div>
+                                    <p className="font-bold text-gray-800 text-sm">{r.full_name || r.name}</p>
+                                    <p className="text-[10px] text-gray-400 font-medium">#{r.emp_no}</p>
+                                </div>
+                            </div>
+                            <span className={`text-[9px] px-2 py-1 rounded-lg font-bold uppercase ${s.bg} ${s.text}`}>
+                                {r.status.replace('_', ' ')}
+                            </span>
+                        </div>
+
+                        <div className="grid grid-cols-2 gap-3 mb-4">
+                            <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100/50">
+                                <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Login/Logout</p>
+                                <div className="space-y-1">
+                                    {r.sessions?.map((s, idx) => (
+                                        <div key={idx} className="text-[10px] font-bold text-gray-600 flex flex-col">
+                                            <span className="text-green-600">IN: {s.login}</span>
+                                            <span className={s.logout === 'N/A' ? 'text-amber-500' : 'text-red-500'}>
+                                                OUT: {s.logout === 'N/A' ? 'ACTIVE' : s.logout}
+                                            </span>
+                                        </div>
+                                    ))}
+                                    {isAbsent && <span className="text-red-400 text-[10px] font-bold">ABSENT</span>}
+                                </div>
+                            </div>
+                            <div className="bg-gray-50 p-2.5 rounded-xl border border-gray-100/50">
+                                <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Total Hours</p>
+                                <p className={`text-xs font-bold ${r.working_hours.includes('Active') ? 'text-amber-500' : 'text-indigo-600'}`}>
+                                    {r.working_hours !== 'N/A' ? r.working_hours : '-'}
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="mb-4">
+                            <p className="text-[9px] font-bold text-gray-400 uppercase mb-1">Assigned Task</p>
+                            <p className="text-xs font-bold text-gray-700 break-words">
+                                {r.title !== 'No Task' ? r.title : <span className="text-gray-300 italic font-normal">No activity recorded</span>}
+                            </p>
+                            {r.is_self_assigned && (
+                                <span className="inline-block mt-1 text-[8px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                    Employee Added
+                                </span>
+                            )}
+                        </div>
+
+                        <div>
+                            <div className="flex justify-between items-center mb-1.5">
+                                <span className="text-[9px] font-bold text-gray-400 uppercase">Task Progress</span>
+                                <span className="text-xs font-bold text-indigo-600">{r.completion_percentage || 0}%</span>
+                            </div>
+                            <div className="w-full bg-gray-100 h-2 rounded-full overflow-hidden shadow-inner">
+                                <div
+                                    className="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all duration-500"
+                                    style={{ width: `${r.completion_percentage || 0}%` }}
+                                />
+                            </div>
+                        </div>
+                    </div>
+                );
+            })}
         </div>
     </div>
 );
