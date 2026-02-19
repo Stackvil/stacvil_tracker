@@ -2,6 +2,8 @@ const Employee = require('../models/Employee');
 const Attendance = require('../models/Attendance');
 const jwt = require('jsonwebtoken');
 const { getISTTime } = require('./utilsController');
+const crypto = require('crypto');
+const Session = require('../models/Session');
 
 // @desc    Register a new employee
 // @route   POST /api/auth/register
@@ -69,9 +71,7 @@ const loginEmployee = async (req, res) => {
         }
 
         // GENERATE SESSION TOKEN
-        const crypto = require('crypto');
         const session_token = crypto.randomBytes(32).toString('hex');
-        const Session = require('../models/Session');
 
         // SINGLE DEVICE ENFORCEMENT FOR EMPLOYEES
         if (employee.role === 'employee') {
