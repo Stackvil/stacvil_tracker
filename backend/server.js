@@ -10,6 +10,16 @@ dotenv.config();
 
 // Connect to Database
 // connectDB(); // Removed top-level call for Vercel compatibility
+// Middleware moved to after app initialization
+
+const authRoutes = require('./routes/authRoutes');
+const taskRoutes = require('./routes/taskRoutes');
+const adminRoutes = require('./routes/adminRoutes');
+const attendanceRoutes = require('./routes/attendanceRoutes');
+const leaveRoutes = require('./routes/leaveRoutes');
+const utilsRoutes = require('./routes/utilsRoutes');
+
+const app = express();
 
 // Middleware to ensure DB connection
 app.use(async (req, res, next) => {
@@ -21,15 +31,6 @@ app.use(async (req, res, next) => {
         res.status(500).json({ message: 'Database connection failed', error: error.message });
     }
 });
-
-const authRoutes = require('./routes/authRoutes');
-const taskRoutes = require('./routes/taskRoutes');
-const adminRoutes = require('./routes/adminRoutes');
-const attendanceRoutes = require('./routes/attendanceRoutes');
-const leaveRoutes = require('./routes/leaveRoutes');
-const utilsRoutes = require('./routes/utilsRoutes');
-
-const app = express();
 
 // Middleware
 app.use(cors({
