@@ -529,11 +529,18 @@ const TaskCard = ({ task, onAccept, onDecline, onUpdateProgress }) => {
                         <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase ${task.is_self_assigned ? 'bg-purple-100 text-purple-700' : 'bg-cyan-100 text-cyan-700'}`}>
                             {task.is_self_assigned ? 'Self Added' : 'Admin Assigned'}
                         </span>
-                        {/* Postponed Badge: If task is not completed and has a reason from a previous logout */}
-                        {!isCompleted && !isDeclined && task.reason && (
+                        {/* Postponed Badge: If task is not completed and due date is in the past */}
+                        {!isCompleted && !isDeclined && task.due_date < new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }) && (
                             <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-amber-100 text-amber-700 flex items-center gap-1">
-                                <Clock className="w-2 h-2" />
+                                <AlertCircle className="w-2 h-2" />
                                 Postponed
+                            </span>
+                        )}
+                        {/* Status reason from logout */}
+                        {!isCompleted && !isDeclined && task.reason && !task.reason.startsWith('Decline rejected') && (
+                            <span className="text-[10px] px-2 py-0.5 rounded-full font-bold uppercase bg-gray-100 text-gray-600 flex items-center gap-1">
+                                <Clock className="w-2 h-2" />
+                                {task.reason}
                             </span>
                         )}
                     </div>

@@ -162,15 +162,25 @@ const AdminDashboard = () => {
                                             <td className="py-3 px-2 text-sm text-gray-600">
                                                 {r.logout_time !== 'N/A' ? r.logout_time : r.login_time !== 'N/A' ? <span className="text-amber-500 text-xs font-semibold">Active</span> : '-'}
                                             </td>
-                                            <td className="py-3 px-2 text-sm text-gray-700 max-w-[140px] truncate">
+                                            <td className="py-3 px-2 text-sm text-gray-700 max-w-[140px]">
                                                 {r.title !== 'No Task' ? (
                                                     <div className="flex flex-col">
-                                                        <span>{r.title}</span>
-                                                        {r.is_self_assigned && (
-                                                            <span className="text-[9px] bg-amber-100 text-amber-700 px-1.5 py-0.5 rounded-md font-bold uppercase tracking-wider w-fit mt-0.5">
-                                                                Employee Added
+                                                        <span className="truncate">{r.title}</span>
+                                                        <div className="flex flex-wrap gap-1 mt-1">
+                                                            <span className={`text-[9px] px-1.5 py-0.5 rounded font-bold uppercase tracking-wider ${r.assigned_date === today ? 'bg-indigo-50 text-indigo-600' : 'bg-amber-100 text-amber-700'}`}>
+                                                                Assigned: {r.assigned_date}
                                                             </span>
-                                                        )}
+                                                            {r.is_self_assigned && (
+                                                                <span className="text-[9px] bg-purple-100 text-purple-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                                                    Self Added
+                                                                </span>
+                                                            )}
+                                                            {r.due_date < today && r.status !== 'completed' && (
+                                                                <span className="text-[9px] bg-red-100 text-red-700 px-1.5 py-0.5 rounded font-bold uppercase tracking-wider">
+                                                                    Overdue
+                                                                </span>
+                                                            )}
+                                                        </div>
                                                     </div>
                                                 ) : <span className="text-gray-300">—</span>}
                                             </td>

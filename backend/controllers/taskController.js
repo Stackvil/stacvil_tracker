@@ -10,22 +10,6 @@ const getEmployeeTasks = async (req, res) => {
         const istTime = getISTTime();
         const today = istTime.date;
 
-        // Auto-carry over incomplete daily tasks
-        await Task.updateMany(
-            {
-                emp_no,
-                task_type: 'daily',
-                due_date: { $lt: today },
-                status: { $in: ['pending', 'in_progress'] }
-            },
-            {
-                $set: {
-                    assigned_date: today,
-                    due_date: today
-                }
-            }
-        );
-
         const tasks = await Task.find({ emp_no }).sort({ due_date: 1 });
 
         const normalizedTasks = tasks.map(t => {
@@ -43,7 +27,7 @@ const getEmployeeTasks = async (req, res) => {
         });
 
         const groupedTasks = {
-            today: normalizedTasks.filter(t => t.due_date === today && !['completed', 'overdue', 'declined'].includes(t.calculated_status)),
+            today: normalizedTasks.filter(t => (t.due_date === today || t.calculated_status === 'overdue') && !['completed', 'declined'].includes(t.calculated_status)),
             pending: normalizedTasks.filter(t => t.due_date > today && !['completed', 'declined'].includes(t.calculated_status)),
             overdue: normalizedTasks.filter(t => t.calculated_status === 'overdue'),
             declined: normalizedTasks.filter(t => t.calculated_status === 'declined'),

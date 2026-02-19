@@ -43,12 +43,24 @@ const getDailyReports = async (req, res) => {
     try {
         const employees = await Employee.find({ role: 'employee' }).sort({ emp_no: 1 });
         const attendances = await Attendance.find({ date: filterDate });
-        const tasks = await Task.find({
-            $or: [
-                { due_date: filterDate },
-                { assigned_date: filterDate }
-            ]
-        });
+        const tasksQuery = filterDate === istTime.date
+            ? {
+                $or: [
+                    { due_date: filterDate },
+                    { assigned_date: filterDate },
+                    {
+                        due_date: { $lt: filterDate },
+                        status: { $in: ['pending', 'in_progress'] }
+                    }
+                ]
+            }
+            : {
+                $or: [
+                    { due_date: filterDate },
+                    { assigned_date: filterDate }
+                ]
+            };
+        const tasks = await Task.find(tasksQuery);
 
         const reports = employees.map(e => {
             const empAttendances = attendances.filter(a => a.emp_no === e.emp_no);
@@ -226,6 +238,7 @@ const getAdminTasks = async (req, res) => {
         const { date } = req.query;
         let query = {};
         if (date) {
+            const isToday = (date === getISTTime().date);
             query = {
                 $or: [
                     { due_date: date },
@@ -233,6 +246,12 @@ const getAdminTasks = async (req, res) => {
                     { completed_date: date }
                 ]
             };
+            if (isToday) {
+                query.$or.push({
+                    due_date: { $lt: date },
+                    status: { $in: ['pending', 'in_progress'] }
+                });
+            }
         }
 
         const tasks = await Task.find(query).sort({ createdAt: -1 });
