@@ -38,7 +38,7 @@ const registerEmployee = async (req, res) => {
 // @desc    Login employee & get token
 // @route   POST /api/auth/login
 const loginEmployee = async (req, res) => {
-    const { emp_no, password } = req.body;
+    const { emp_no, password, device_info } = req.body;
     const cleanEmpNo = emp_no?.trim().toUpperCase();
 
     try {
@@ -68,8 +68,44 @@ const loginEmployee = async (req, res) => {
             throw new Error('JWT_SECRET is missing');
         }
 
+        // GENERATE SESSION TOKEN
+        const crypto = require('crypto');
+        const session_token = crypto.randomBytes(32).toString('hex');
+        const Session = require('../models/Session');
+
+        // SINGLE DEVICE ENFORCEMENT FOR EMPLOYEES
+        if (employee.role === 'employee') {
+            // 1. Mark all previous active sessions as inactive
+            await Session.updateMany(
+                { emp_no: employee.emp_no, is_active: true },
+                { is_active: false }
+            );
+
+            // 2. Emit force_logout event
+            const io = req.app.get('io');
+            if (io) {
+                io.to(employee.emp_no).emit('force_logout', {
+                    message: 'Your account has been logged in from another device.'
+                });
+            }
+        }
+
+        // Create new session
+        await Session.create({
+            emp_no: employee.emp_no,
+            session_token: session_token,
+            device_info: device_info || 'unknown',
+            login_time: new Date(),
+            is_active: true
+        });
+
         const token = jwt.sign(
-            { id: employee._id, emp_no: employee.emp_no, role: employee.role },
+            {
+                id: employee._id,
+                emp_no: employee.emp_no,
+                role: employee.role,
+                session_token: session_token // Embed session token in JWT
+            },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRE || '24h' }
         );
@@ -93,6 +129,7 @@ const loginEmployee = async (req, res) => {
 
         res.json({
             token,
+            session_token, // Send explicitly if needed by frontend outside JWT
             user: {
                 id: employee._id,
                 emp_no: employee.emp_no,

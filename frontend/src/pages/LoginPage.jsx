@@ -1,5 +1,5 @@
-import React, { useState, useContext } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useContext, useEffect } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { LogIn, User, Lock, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -11,6 +11,14 @@ const LoginPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
+    const [searchParams] = useSearchParams();
+
+    useEffect(() => {
+        const reason = searchParams.get('reason');
+        if (reason === 'concurrent_login') {
+            setError('Your account has been logged in from another device.');
+        }
+    }, [searchParams]);
 
     const handleSubmit = async (e) => {
         e.preventDefault();

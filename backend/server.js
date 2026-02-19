@@ -88,13 +88,46 @@ app.use((err, req, res, next) => {
     });
 });
 
+const http = require('http');
+const { Server } = require("socket.io");
+
+const server = http.createServer(app);
+const io = new Server(server, {
+    cors: {
+        origin: [
+            'http://localhost:5173',
+            'http://localhost:5174',
+            'https://track.stackvil.com',
+            /\.vercel\.app$/
+        ],
+        credentials: true
+    }
+});
+
+// Socket.io connection
+io.on('connection', (socket) => {
+    console.log('New client connected:', socket.id);
+
+    socket.on('join_room', (emp_no) => {
+        socket.join(emp_no);
+        console.log(`Socket ${socket.id} joined room: ${emp_no}`);
+    });
+
+    socket.on('disconnect', () => {
+        console.log('Client disconnected:', socket.id);
+    });
+});
+
+// Make io accessible in routes
+app.set('io', io);
+
+module.exports = { app, server, io };
+
 const PORT = process.env.PORT || 5000;
 
 if (process.env.NODE_ENV !== 'production') {
-    app.listen(PORT, () => {
+    server.listen(PORT, () => {
         console.log(`Server running on port ${PORT}`);
         console.log(`Health check: http://localhost:${PORT}/api/health`);
     });
 }
-
-module.exports = app;
