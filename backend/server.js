@@ -34,33 +34,27 @@ app.use(express.json());
 app.use(morgan('dev'));
 
 // Health check endpoint
-app.get('/api/health', async (req, res) => {
-    try {
-        const dbStatus = mongoose.connection.readyState === 1 ? 'connected' : 'disconnected';
-        const dbInfo = mongoose.connection.readyState === 1 ? {
-            host: mongoose.connection.host,
-            name: mongoose.connection.name
-        } : null;
+app.get('/api/health', (req, res) => {
+    const dbStatus = mongoose.connection.readyState;
+    const dbStatusMap = {
+        0: 'disconnected',
+        1: 'connected',
+        2: 'connecting',
+        3: 'disconnecting'
+    };
 
-        res.json({
-            status: 'ok',
-            database: dbStatus,
-            dbInfo,
-            environment: {
-                hasMongoUri: !!process.env.MONGODB_URI,
-                hasJwtSecret: !!process.env.JWT_SECRET,
-                nodeEnv: process.env.NODE_ENV
-            },
-            timestamp: new Date().toISOString()
-        });
-    } catch (error) {
-        res.status(503).json({
-            status: 'error',
-            database: 'disconnected',
-            error: error.message,
-            timestamp: new Date().toISOString()
-        });
-    }
+    res.json({
+        status: 'ok',
+        database: dbStatusMap[dbStatus] || 'unknown',
+        uptime: process.uptime(),
+        environment: {
+            hasMongoUri: !!process.env.MONGODB_URI,
+            hasJwtSecret: !!process.env.JWT_SECRET,
+            nodeEnv: process.env.NODE_ENV,
+            region: process.env.VERCEL_REGION || 'local'
+        },
+        timestamp: new Date().toISOString()
+    });
 });
 
 // Routes
@@ -76,11 +70,21 @@ app.get('/', (req, res) => {
 });
 
 // 404 handler for undefined routes
-app.use((req, res) => {
-    res.status(404).json({
-        message: 'Route not found',
-        path: req.path,
-        method: req.method
+app.use((req, res, next) => {
+    const err = new Error(`Not Found - ${req.originalUrl}`);
+    res.status(404);
+    next(err);
+});
+
+// Global Error Handler
+app.use((err, req, res, next) => {
+    const statusCode = res.statusCode === 200 ? 500 : res.statusCode;
+    console.error(`Error ${statusCode}: ${err.message}`);
+    console.error(err.stack);
+
+    res.status(statusCode).json({
+        message: err.message,
+        stack: process.env.NODE_ENV === 'production' ? '🥞' : err.stack,
     });
 });
 
