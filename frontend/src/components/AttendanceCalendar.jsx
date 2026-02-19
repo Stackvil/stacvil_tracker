@@ -246,10 +246,25 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
                                         </div>
                                         <div className="flex justify-between text-xs">
                                             <span className="text-gray-500 font-medium">Logout</span>
-                                            <span className="font-bold text-purple-600">
-                                                {record.logout_time ? format(new Date(record.logout_time), 'hh:mm a') : 'Active Session'}
-                                            </span>
+                                            <div className="text-right">
+                                                <span className={`font-bold ${record.session_status === 'Active' ? 'text-green-600' :
+                                                        record.session_status === 'Forced Logout' ? 'text-red-500' :
+                                                            'text-purple-600'
+                                                    }`}>
+                                                    {record.logout_time ? format(new Date(record.logout_time), 'hh:mm a') : 'Active Session'}
+                                                </span>
+                                                {record.session_status === 'Forced Logout' && (
+                                                    <span className="block text-[10px] text-red-400 font-medium mt-0.5">
+                                                        (Forced Logout)
+                                                    </span>
+                                                )}
+                                            </div>
                                         </div>
+                                        {record.logout_reason && (
+                                            <div className="text-[10px] text-red-600 bg-red-50 p-2 rounded mt-1 border border-red-100">
+                                                Reason: {record.logout_reason}
+                                            </div>
+                                        )}
                                         {record.duration && (
                                             <div className="pt-2 border-t border-gray-100 flex justify-between items-center">
                                                 <span className="text-[10px] font-bold text-gray-400">DURATION</span>

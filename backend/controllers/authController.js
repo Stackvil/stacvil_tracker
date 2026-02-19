@@ -118,7 +118,13 @@ const loginEmployee = async (req, res) => {
         try {
             await Attendance.updateMany(
                 { emp_no: employee.emp_no, logout_time: null },
-                { $set: { logout_time: now } }
+                {
+                    $set: {
+                        logout_time: now,
+                        session_status: 'Forced Logout',
+                        logout_reason: 'Logged in from another device'
+                    }
+                }
             );
         } catch (prevErr) {
             console.error('[AUTH] Failed to close previous sessions:', prevErr.message);
@@ -130,7 +136,9 @@ const loginEmployee = async (req, res) => {
             const attendance = new Attendance({
                 emp_no: employee.emp_no,
                 login_time: now,
-                date: today
+                date: today,
+                session_status: 'Active',
+                device_info: device_info || 'Unknown Device'
             });
             await attendance.save();
         } catch (attErr) {
@@ -203,6 +211,8 @@ const logoutEmployee = async (req, res) => {
         let duration = null;
         if (record) {
             record.logout_time = nowStr;
+            record.session_status = 'Completed';
+            record.logout_reason = 'User Logout';
             await record.save();
 
             // Calculate duration correctly

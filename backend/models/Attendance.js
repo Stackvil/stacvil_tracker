@@ -17,6 +17,19 @@ const attendanceSchema = new mongoose.Schema({
     date: {
         type: String, // Store as YYYY-MM-DD for easier filtering
         required: true
+    },
+    session_status: {
+        type: String,
+        enum: ['Active', 'Completed', 'Forced Logout'],
+        default: 'Active'
+    },
+    logout_reason: {
+        type: String,
+        default: null
+    },
+    device_info: {
+        type: String,
+        default: null
     }
 }, { timestamps: true });
 

@@ -31,7 +31,10 @@ const formatAttendanceRecords = (attendanceRows) => {
             login_time: record.login_time,
             logout_time: record.logout_time,
             date: record.date,
-            duration: duration || (record.login_time && !record.logout_time ? "Running" : "N/A")
+            duration: duration || (record.login_time && !record.logout_time ? "Running" : "N/A"),
+            session_status: record.session_status || (record.logout_time ? 'Completed' : 'Active'),
+            logout_reason: record.logout_reason,
+            device_info: record.device_info
         };
     });
 };
