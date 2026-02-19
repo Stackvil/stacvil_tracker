@@ -96,7 +96,7 @@ const LiveClock = () => {
 
             {/* Work Duration - Only show for employees */}
             {isEmployee && (
-                <div className="flex items-center gap-3 px-4 py-2 bg-green-50 border border-green-100 rounded-xl shadow-sm">
+                <div className="flex items-center gap-3 px-4 py-2 bg-green-50 border border-green-200 rounded-xl shadow-md shadow-green-100/50">
                     <div className="flex flex-col">
                         <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest leading-none mb-1">Work Duration</span>
                         <span className="text-lg font-black text-green-900 font-mono leading-none tracking-tighter">

@@ -9,42 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO } from 'date-fns';
 import AttendanceCalendar from '../components/AttendanceCalendar';
 
-const DashboardTimer = () => {
-    const [duration, setDuration] = useState(0);
-    const syncRef = useRef({ start: 0, perf: performance.now() });
-
-    useEffect(() => {
-        const sync = async () => {
-            try {
-                const res = await api.get('/attendance/duration');
-                syncRef.current.start = (res.data.totalMilliseconds || 0) / 1000;
-                syncRef.current.perf = performance.now();
-            } catch (e) {
-                console.error('Timer sync failed', e);
-            }
-        };
-        sync();
-        const interval = setInterval(() => {
-            const elapsed = (performance.now() - syncRef.current.perf) / 1000;
-            setDuration(syncRef.current.start + elapsed);
-        }, 1000);
-        return () => clearInterval(interval);
-    }, []);
-
-    const format = (s) => {
-        const h = Math.floor(s / 3600);
-        const m = Math.floor((s % 3600) / 60);
-        const sec = Math.floor(s % 60);
-        return `${h}h ${m}m ${sec}s`;
-    };
-
-    return (
-        <div className="flex items-center gap-2 text-indigo-900">
-            <span className="text-[10px] font-bold uppercase tracking-widest text-indigo-400">Total Today:</span>
-            <span className="text-lg font-black font-mono">{format(duration)}</span>
-        </div>
-    );
-};
+// DashboardTimer removed - consolidated to Header stopwatch
 
 const EmployeeDashboard = () => {
     const { user } = useContext(AuthContext);
@@ -74,6 +39,20 @@ const EmployeeDashboard = () => {
     const [attendanceHistory, setAttendanceHistory] = useState([]);
     const [taskHistory, setTaskHistory] = useState([]);
     const [leaveHistory, setLeaveHistory] = useState([]);
+    const [firstLogin, setFirstLogin] = useState(null);
+
+    // Fetch first login time and duration
+    useEffect(() => {
+        const fetchDurationData = async () => {
+            try {
+                const res = await api.get('/attendance/duration');
+                setFirstLogin(res.data.firstLoginTime);
+            } catch (e) {
+                console.error('Failed to fetch duration data:', e);
+            }
+        };
+        fetchDurationData();
+    }, []);
 
     useEffect(() => {
         let interval;
@@ -206,18 +185,18 @@ const EmployeeDashboard = () => {
                         <Lock className="w-4 h-4" />
                         Change Password
                     </button>
-                    <div className="px-4 py-3 bg-indigo-50 text-indigo-700 rounded-xl font-semibold flex flex-col gap-1 shadow-sm border border-indigo-100">
+                    <div className="px-4 py-3 bg-indigo-50 text-indigo-700 rounded-xl font-semibold flex flex-col gap-1 shadow-sm border border-indigo-100 min-w-[200px]">
                         <div className="flex items-center gap-2 border-b border-indigo-100 pb-1 mb-1">
                             <Clock className="w-3 h-3 text-indigo-400" />
-                            <span className="text-[10px] uppercase tracking-wider text-indigo-400 font-bold">Today Login:</span>
-                            <span className="text-xs">
-                                {user?.login_time ? new Intl.DateTimeFormat('en-IN', {
+                            <span className="text-[10px] uppercase tracking-wider text-indigo-400 font-bold">Today's First Login:</span>
+                            <span className="text-xs font-mono">
+                                {firstLogin ? new Intl.DateTimeFormat('en-IN', {
                                     timeZone: 'Asia/Kolkata',
                                     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
-                                }).format(new Date(user.login_time)) : 'N/A'}
+                                }).format(new Date(firstLogin)) : 'N/A'}
                             </span>
                         </div>
-                        <DashboardTimer />
+                        <div className="text-[10px] text-indigo-400 font-medium italic">Stopwatch moved to Header Header</div>
                     </div>
                 </div>
             </div>

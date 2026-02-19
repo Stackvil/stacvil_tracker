@@ -128,7 +128,10 @@ const getWorkDuration = async (req, res) => {
             }
         });
 
-        res.json({ totalMilliseconds });
+        res.json({
+            totalMilliseconds,
+            firstLoginTime: attendanceRows[0].login_time
+        });
     } catch (error) {
         console.error('Error fetching work duration:', error);
         res.status(500).json({ message: 'Server error' });
