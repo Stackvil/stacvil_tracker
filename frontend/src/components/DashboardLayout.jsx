@@ -1,7 +1,7 @@
 import React, { useContext } from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { LayoutDashboard, Users, FileText, LogOut, Moon, Sun, Bell, X, RefreshCw } from 'lucide-react';
+import { LayoutDashboard, Users, FileText, LogOut, Moon, Sun, Bell, X, RefreshCw, CalendarPlus } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import api from '../services/api';
 import LiveClock from './LiveClock';
@@ -162,9 +162,11 @@ const DashboardLayout = () => {
     const navItems = user?.role === 'admin' ? [
         { name: 'Overview', path: '/admin', icon: LayoutDashboard },
         { name: 'Employees', path: '/admin/employees', icon: Users },
+        { name: 'Leaves', path: '/admin/leaves', icon: CalendarPlus },
         { name: 'Reports', path: '/admin/reports', icon: FileText },
     ] : [
         { name: 'My Tasks', path: '/dashboard', icon: LayoutDashboard },
+        { name: 'Leaves', path: '/leaves', icon: CalendarPlus },
     ];
 
     const handleLogoutClick = () => {

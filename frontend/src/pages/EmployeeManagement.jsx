@@ -31,6 +31,7 @@ const EmployeeManagement = () => {
     const [showAttendanceModal, setShowAttendanceModal] = useState(null);
     const [employeeAttendance, setEmployeeAttendance] = useState([]);
     const [employeeTasks, setEmployeeTasks] = useState([]);
+    const [employeeLeaves, setEmployeeLeaves] = useState([]);
     const [loadingAttendance, setLoadingAttendance] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(null);
     const [showDeleteTaskModal, setShowDeleteTaskModal] = useState(null); // taskId
@@ -125,9 +126,14 @@ const EmployeeManagement = () => {
     const fetchEmployeeAttendance = async (emp_no) => {
         setLoadingAttendance(true);
         try {
-            const response = await api.get(`/attendance/admin/history/${emp_no}`);
-            setEmployeeAttendance(response.data.attendance);
-            setEmployeeTasks(response.data.tasks);
+            const [attRes, leaveRes] = await Promise.all([
+                api.get(`/attendance/admin/history/${emp_no}`),
+                api.get(`/leaves/admin/all`) // We filter manually or we could add a specific route
+            ]);
+            setEmployeeAttendance(attRes.data.attendance);
+            setEmployeeTasks(attRes.data.tasks);
+            // Filter leaves for this employee
+            setEmployeeLeaves(leaveRes.data.filter(l => l.emp_no === emp_no));
             setShowAttendanceModal(emp_no);
         } catch (err) {
             setError('Failed to fetch attendance records');
@@ -551,7 +557,11 @@ const EmployeeManagement = () => {
                         wide
                     >
                         <div className="max-h-[80vh] overflow-y-auto pr-2">
-                            <AttendanceCalendar attendanceHistory={employeeAttendance} tasks={employeeTasks} />
+                            <AttendanceCalendar
+                                attendanceHistory={employeeAttendance}
+                                tasks={employeeTasks}
+                                leaves={employeeLeaves}
+                            />
                         </div>
                     </Modal>
                 )}

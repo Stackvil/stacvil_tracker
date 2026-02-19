@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import {
-    Clock, Calendar as CalendarIcon, ChevronLeft, ChevronRight
+    Clock, Calendar as CalendarIcon, ChevronLeft, ChevronRight,
+    Coffee
 } from 'lucide-react';
 import {
     format, startOfMonth, endOfMonth, startOfWeek,
@@ -8,7 +9,7 @@ import {
     isSameMonth, addMonths, subMonths, isToday
 } from 'date-fns';
 
-const AttendanceCalendar = ({ attendanceHistory = [], tasks = [] }) => {
+const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] }) => {
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -36,6 +37,15 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [] }) => {
         return tasks.filter(task =>
             isSameDay(parseLocalDate(task.assigned_date), day)
         );
+    };
+
+    const getLeavesForDay = (day) => {
+        return (leaves || []).filter(l => {
+            if (l.status !== 'approved') return false;
+            const start = parseLocalDate(l.start_date);
+            const end = l.type === 'multiple' ? parseLocalDate(l.end_date) : start;
+            return isSameDay(day, start) || isSameDay(day, end) || (day > start && day < end);
+        });
     };
 
     const dayAttendance = getAttendanceForDay(selectedDate);
@@ -76,6 +86,7 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [] }) => {
                             const getDayContent = (day) => {
                                 const attendanceRecords = getAttendanceForDay(day);
                                 const dayTasks = getTasksForDay(day);
+                                const dayLeaves = getLeavesForDay(day);
 
                                 // Calculate total duration for the day
                                 let totalMs = 0;
@@ -109,6 +120,10 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [] }) => {
                                         </span>
 
                                         <div className="flex gap-1">
+                                            {dayLeaves.length > 0 && (
+                                                <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-300' : 'bg-amber-500'
+                                                    }`} />
+                                            )}
                                             {attendanceRecords.length > 0 && (
                                                 <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-300' : 'bg-green-500'
                                                     }`} />

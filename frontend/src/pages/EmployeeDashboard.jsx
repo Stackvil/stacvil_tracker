@@ -73,6 +73,7 @@ const EmployeeDashboard = () => {
     // Attendance states
     const [attendanceHistory, setAttendanceHistory] = useState([]);
     const [taskHistory, setTaskHistory] = useState([]);
+    const [leaveHistory, setLeaveHistory] = useState([]);
 
     useEffect(() => {
         let interval;
@@ -101,11 +102,15 @@ const EmployeeDashboard = () => {
     const fetchAttendanceHistory = async () => {
         setLoading(true);
         try {
-            const response = await api.get('/attendance/history');
-            setAttendanceHistory(response.data.attendance);
-            setTaskHistory(response.data.tasks);
+            const [attRes, leaveRes] = await Promise.all([
+                api.get('/attendance/history'),
+                api.get('/leaves/my-leaves')
+            ]);
+            setAttendanceHistory(attRes.data.attendance);
+            setTaskHistory(attRes.data.tasks);
+            setLeaveHistory(leaveRes.data);
         } catch (error) {
-            console.error('Failed to fetch attendance history:', error);
+            console.error('Failed to fetch attendance/leave history:', error);
         } finally {
             setLoading(false);
         }
@@ -308,7 +313,7 @@ const EmployeeDashboard = () => {
                     />
                 </div>
             ) : (
-                <AttendanceCalendar attendanceHistory={attendanceHistory} tasks={taskHistory} />
+                <AttendanceCalendar attendanceHistory={attendanceHistory} tasks={taskHistory} leaves={leaveHistory} />
             )}
 
             {/* Decline Reason Modal */}

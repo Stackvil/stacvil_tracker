@@ -7,6 +7,8 @@ import EmployeeDashboard from './pages/EmployeeDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import EmployeeManagement from './pages/EmployeeManagement';
 import Reports from './pages/Reports';
+import LeaveRequest from './pages/LeaveRequest';
+import LeaveManagement from './pages/LeaveManagement';
 
 function App() {
   return (
@@ -19,6 +21,7 @@ function App() {
           <Route element={<ProtectedRoute allowedRoles={['employee']} />}>
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<EmployeeDashboard />} />
+              <Route path="/leaves" element={<LeaveRequest />} />
             </Route>
           </Route>
 
@@ -27,6 +30,7 @@ function App() {
             <Route element={<DashboardLayout />}>
               <Route path="/admin" element={<AdminDashboard />} />
               <Route path="/admin/employees" element={<EmployeeManagement />} />
+              <Route path="/admin/leaves" element={<LeaveManagement />} />
               <Route path="/admin/reports" element={<Reports />} />
             </Route>
           </Route>

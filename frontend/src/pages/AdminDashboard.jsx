@@ -28,6 +28,7 @@ const STATUS_COLORS = {
 const AdminDashboard = () => {
     const [stats, setStats] = useState(null);
     const [todayReport, setTodayReport] = useState([]);
+    const [leavesToday, setLeavesToday] = useState([]);
     const [loading, setLoading] = useState(true);
 
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
@@ -40,12 +41,17 @@ const AdminDashboard = () => {
 
     const fetchAll = async () => {
         try {
-            const [anaRes, repRes] = await Promise.all([
+            const [anaRes, repRes, leaveRes] = await Promise.all([
                 api.get('/admin/analytics'),
                 api.get(`/admin/reports/daily?date=${today}`),
+                api.get('/leaves/admin/all')
             ]);
             setStats(anaRes.data);
             setTodayReport(repRes.data);
+            setLeavesToday(leaveRes.data.filter(l =>
+                l.status === 'approved' &&
+                (today === l.start_date || (l.type === 'multiple' && today >= l.start_date && today <= l.end_date))
+            ));
         } catch (error) {
             console.error('Failed to fetch analytics:', error);
         } finally {
@@ -111,8 +117,9 @@ const AdminDashboard = () => {
                 {/* Mini summary pills */}
                 <div className="flex flex-wrap gap-3 mb-5">
                     <Pill color="bg-green-50 text-green-700 border-green-200" label={`${presentToday} Present`} />
-                    <Pill color="bg-red-50 text-red-600 border-red-200" label={`${absentToday} Absent`} />
-                    <Pill color="bg-amber-50 text-amber-700 border-amber-200" label={`${activeNow} Active Now`} />
+                    <Pill color="bg-amber-50 text-amber-700 border-amber-200" label={`${leavesToday.length} On Leave`} />
+                    <Pill color="bg-red-50 text-red-600 border-red-200" label={`${absentToday - leavesToday.length} Absent`} />
+                    <Pill color="bg-blue-50 text-blue-700 border-blue-200" label={`${activeNow} Active Now`} />
                     <Pill color="bg-indigo-50 text-indigo-700 border-indigo-200" label={`${completedToday} Tasks Done`} />
                 </div>
 
