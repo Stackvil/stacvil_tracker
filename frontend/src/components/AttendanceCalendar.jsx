@@ -103,7 +103,7 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [] }) => {
                                 return (
                                     <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                                         <span className={`text-sm font-medium ${isSelected ? 'text-white' :
-                                                isTodayDay ? 'text-indigo-600' : 'text-gray-700'
+                                            isTodayDay ? 'text-indigo-600' : 'text-gray-700'
                                             }`}>
                                             {format(day, 'd')}
                                         </span>
@@ -179,10 +179,32 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [] }) => {
             {/* Day Details */ }
     <div className="space-y-6">
         <div className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
-            <h3 className="font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Clock className="w-5 h-5 text-indigo-600" />
-                Details: {format(selectedDate, 'MMMM d, yyyy')}
-            </h3>
+            <div className="flex justify-between items-center mb-4">
+                <h3 className="font-bold text-gray-800 flex items-center gap-2">
+                    <Clock className="w-5 h-5 text-indigo-600" />
+                    Details: {format(selectedDate, 'MMMM d, yyyy')}
+                </h3>
+                {dayAttendance.length > 0 && (
+                    <div className="px-3 py-1 bg-indigo-600 text-white rounded-lg shadow-sm flex flex-col items-center">
+                        <span className="text-[8px] font-black uppercase tracking-tighter leading-none opacity-80">Total Duration</span>
+                        <span className="text-sm font-black font-mono leading-tight">
+                            {(() => {
+                                let totalMs = 0;
+                                dayAttendance.forEach(r => {
+                                    if (r.login_time && r.logout_time) {
+                                        totalMs += new Date(r.logout_time) - new Date(r.login_time);
+                                    } else if (r.login_time && isToday(selectedDate)) {
+                                        totalMs += new Date() - new Date(r.login_time);
+                                    }
+                                });
+                                const h = Math.floor(totalMs / 3600000);
+                                const m = Math.floor((totalMs % 3600000) / 60000);
+                                return `${h}h ${m}m`;
+                            })()}
+                        </span>
+                    </div>
+                )}
+            </div>
 
             <div className="space-y-6">
                 {/* Attendance Section */}

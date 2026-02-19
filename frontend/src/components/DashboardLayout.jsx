@@ -139,6 +139,26 @@ const DashboardLayout = () => {
     const location = useLocation();
     const [isLogoutModalOpen, setIsLogoutModalOpen] = React.useState(false);
 
+    // Auto-logout monitor for midnight IST
+    React.useEffect(() => {
+        const checkMidnight = () => {
+            const now = new Date();
+            // Convert to IST
+            const istOptions = { timeZone: 'Asia/Kolkata', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: false };
+            const istStr = new Intl.DateTimeFormat('en-US', istOptions).format(now);
+            const [hours, minutes, seconds] = istStr.split(':').map(Number);
+
+            // If it's 00:00:00 - 00:00:10, trigger refresh
+            if (hours === 0 && minutes === 0 && seconds < 10) {
+                console.log("Midnight detected (IST). Refreshing session...");
+                window.location.reload();
+            }
+        };
+
+        const interval = setInterval(checkMidnight, 5000);
+        return () => clearInterval(interval);
+    }, []);
+
     const navItems = user?.role === 'admin' ? [
         { name: 'Overview', path: '/admin', icon: LayoutDashboard },
         { name: 'Employees', path: '/admin/employees', icon: Users },
