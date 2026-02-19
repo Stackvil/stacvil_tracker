@@ -226,7 +226,13 @@ const getAdminTasks = async (req, res) => {
         const { date } = req.query;
         let query = {};
         if (date) {
-            query.due_date = date;
+            query = {
+                $or: [
+                    { due_date: date },
+                    { assigned_date: date },
+                    { completed_date: date }
+                ]
+            };
         }
 
         const tasks = await Task.find(query).sort({ createdAt: -1 });
