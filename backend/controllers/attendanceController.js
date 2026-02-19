@@ -128,6 +128,9 @@ const getWorkDuration = async (req, res) => {
             }
         });
 
+        // Sort by login_time to be absolutely sure attendanceRows[0] is the earliest
+        attendanceRows.sort((a, b) => new Date(a.login_time) - new Date(b.login_time));
+
         res.json({
             totalMilliseconds,
             firstLoginTime: attendanceRows[0].login_time
