@@ -223,7 +223,13 @@ const assignTask = async (req, res) => {
 // @desc    Get all tasks assigned by admin
 const getAdminTasks = async (req, res) => {
     try {
-        const tasks = await Task.find({}).sort({ createdAt: -1 });
+        const { date } = req.query;
+        let query = {};
+        if (date) {
+            query.due_date = date;
+        }
+
+        const tasks = await Task.find(query).sort({ createdAt: -1 });
         const employees = await Employee.find({});
         const empMap = employees.reduce((acc, e) => {
             acc[e.emp_no] = {

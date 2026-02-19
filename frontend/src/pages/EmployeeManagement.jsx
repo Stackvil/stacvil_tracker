@@ -13,6 +13,7 @@ const EmployeeManagement = () => {
     const [adminTasks, setAdminTasks] = useState([]);
     const [loadingTasks, setLoadingTasks] = useState(false);
     const [showTasksSection, setShowTasksSection] = useState(true);
+    const [filterDate, setFilterDate] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }));
 
     const [createForm, setCreateForm] = useState({
         emp_no: '', name: '', full_name: '', email: '', password: '', role: 'employee'
@@ -38,13 +39,13 @@ const EmployeeManagement = () => {
 
     useEffect(() => {
         fetchEmployees();
-        fetchAdminTasks();
+        fetchAdminTasks(filterDate);
         const interval = setInterval(() => {
             fetchEmployees();
-            fetchAdminTasks();
+            fetchAdminTasks(filterDate);
         }, 30000); // auto-refresh every 30s
         return () => clearInterval(interval);
-    }, []);
+    }, [filterDate]);
 
     const fetchEmployees = async () => {
         try {
@@ -57,10 +58,11 @@ const EmployeeManagement = () => {
         }
     };
 
-    const fetchAdminTasks = async () => {
+    const fetchAdminTasks = async (date) => {
         setLoadingTasks(true);
         try {
-            const response = await api.get('/admin/tasks');
+            const queryDate = date !== undefined ? date : filterDate;
+            const response = await api.get(`/admin/tasks${queryDate ? `?date=${queryDate}` : ''}`);
             setAdminTasks(response.data);
         } catch (error) {
             console.error('Failed to fetch admin tasks:', error);
@@ -313,8 +315,25 @@ const EmployeeManagement = () => {
                         </h2>
                     </div>
                     <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-2 border border-gray-200 rounded-lg px-2 py-1 bg-white">
+                            <Calendar className="w-3 h-3 text-gray-400" />
+                            <input
+                                type="date"
+                                value={filterDate}
+                                onChange={(e) => setFilterDate(e.target.value)}
+                                className="text-xs outline-none bg-transparent font-medium text-gray-600"
+                            />
+                            {filterDate && (
+                                <button
+                                    onClick={(e) => { e.stopPropagation(); setFilterDate(''); }}
+                                    className="text-gray-400 hover:text-red-500"
+                                >
+                                    <X className="w-3 h-3" />
+                                </button>
+                            )}
+                        </div>
                         <button
-                            onClick={(e) => { e.stopPropagation(); fetchAdminTasks(); }}
+                            onClick={(e) => { e.stopPropagation(); fetchAdminTasks(filterDate); }}
                             className="text-xs text-indigo-600 hover:underline font-medium"
                         >
                             Refresh
