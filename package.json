@@ -1,0 +1,17 @@
+{
+    "name": "stacvil-tracker",
+    "version": "1.0.0",
+    "description": "Employee Work Monitoring Web Application",
+    "main": "backend/server.js",
+    "scripts": {
+        "start": "node backend/server.js",
+        "build": "cd frontend && npm install && npm run build",
+        "backend-install": "cd backend && npm install"
+    },
+    "keywords": [],
+    "author": "",
+    "license": "ISC",
+    "devDependencies": {
+        "vercel": "^32.0.0"
+    }
+}
