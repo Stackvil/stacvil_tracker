@@ -121,7 +121,12 @@ io.on('connection', (socket) => {
 // Make io accessible in routes
 app.set('io', io);
 
-module.exports = { app, server, io };
+// Handler for Vercel
+const handler = (req, res) => {
+    server.emit('request', req, res);
+};
+
+module.exports = app;
 
 const PORT = process.env.PORT || 5000;
 
