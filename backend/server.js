@@ -9,7 +9,18 @@ const mongoose = require('mongoose');
 dotenv.config();
 
 // Connect to Database
-connectDB();
+// connectDB(); // Removed top-level call for Vercel compatibility
+
+// Middleware to ensure DB connection
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        console.error('Database connection failed:', error);
+        res.status(500).json({ message: 'Database connection failed', error: error.message });
+    }
+});
 
 const authRoutes = require('./routes/authRoutes');
 const taskRoutes = require('./routes/taskRoutes');
