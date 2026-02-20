@@ -54,7 +54,8 @@ export const AuthProvider = ({ children }) => {
         } catch (error) {
             return {
                 success: false,
-                message: error.response?.data?.message || 'Login failed'
+                message: error.response?.data?.message || 'Login failed',
+                data: error.response?.data
             };
         }
     };

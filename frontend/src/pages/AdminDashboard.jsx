@@ -25,6 +25,8 @@ const STATUS_COLORS = {
     declined: { bg: 'bg-orange-100', text: 'text-orange-700', hex: '#f97316' },
 };
 
+import LoginRequestsList from '../components/Admin/LoginRequestsList';
+
 const AdminDashboard = () => {
     const [stats, setStats] = useState(null);
     const [todayReport, setTodayReport] = useState([]);
@@ -97,6 +99,9 @@ const AdminDashboard = () => {
                 <StatCard title="Tasks Completed" value={(stats.taskStats || []).find(s => s.status === 'completed')?.count || 0} icon={CheckCircle} color="bg-indigo-500" />
                 <StatCard title="In Progress" value={(stats.taskStats || []).find(s => s.status === 'in_progress')?.count || 0} icon={Clock} color="bg-amber-500" />
             </div>
+
+            {/* Pending Login Requests */}
+            <LoginRequestsList />
 
             {/* Today's Attendance Summary */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">

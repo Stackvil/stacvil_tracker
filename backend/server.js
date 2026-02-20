@@ -133,6 +133,11 @@ io.on('connection', (socket) => {
 // Make io accessible in routes
 app.set('io', io);
 
+// Initialize Scheduler
+const initScheduler = require('./scheduler');
+initScheduler(io);
+
+
 // Handler for Vercel
 const handler = (req, res) => {
     server.emit('request', req, res);

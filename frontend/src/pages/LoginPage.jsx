@@ -8,7 +8,9 @@ const LoginPage = () => {
     const [empNo, setEmpNo] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
-    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showRequestModal, setShowRequestModal] = useState(false);
+    const [requestReason, setRequestReason] = useState('');
+    const [requestStatus, setRequestStatus] = useState(null);
     const { login } = useContext(AuthContext);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
@@ -35,8 +37,23 @@ const LoginPage = () => {
             }
         } else {
             setError(result.message);
+            if (result.data?.restricted) {
+                setShowRequestModal(true);
+            }
         }
         setIsSubmitting(false);
+    };
+
+    const handleRequestSubmit = async (e) => {
+        e.preventDefault();
+        setRequestStatus({ type: 'loading', message: 'Submitting request...' });
+        try {
+            const api = (await import('../services/api')).default;
+            await api.post('/auth/login-request', { emp_no: empNo, reason: requestReason });
+            setRequestStatus({ type: 'success', message: 'Request submitted successfully. Please wait for admin approval.' });
+        } catch (err) {
+            setRequestStatus({ type: 'error', message: err.response?.data?.message || 'Failed to submit request' });
+        }
     };
 
     return (
@@ -117,7 +134,62 @@ const LoginPage = () => {
                     </p>
                 </div>
             </motion.div>
+
+            {showRequestModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="bg-white rounded-2xl p-8 max-w-sm w-full shadow-2xl"
+                    >
+                        <div className="text-center mb-6">
+                            <div className="w-16 h-16 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <AlertCircle className="w-8 h-8" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-800">Office Hours Restricted</h2>
+                            <p className="text-gray-600 mt-2">Login is restricted after 7:00 PM IST. Please request admin approval to continue.</p>
+                        </div>
+
+                        {requestStatus?.message ? (
+                            <div className={`p-4 rounded-xl mb-6 text-sm ${requestStatus.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
+                                    requestStatus.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
+                                        'bg-blue-50 text-blue-700 border border-blue-200'
+                                }`}>
+                                {requestStatus.message}
+                            </div>
+                        ) : (
+                            <form onSubmit={handleRequestSubmit} className="space-y-4">
+                                <div>
+                                    <label className="text-sm font-semibold text-gray-700 mb-1 block">Reason for late login</label>
+                                    <textarea
+                                        required
+                                        className="w-full p-3 bg-gray-50 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                                        placeholder="e.g., Urgent task completion"
+                                        rows="3"
+                                        value={requestReason}
+                                        onChange={(e) => setRequestReason(e.target.value)}
+                                    ></textarea>
+                                </div>
+                                <button
+                                    type="submit"
+                                    className="w-full py-3 bg-indigo-600 text-white rounded-xl font-bold hover:bg-indigo-700 transition-all"
+                                >
+                                    Submit Request
+                                </button>
+                            </form>
+                        )}
+
+                        <button
+                            onClick={() => setShowRequestModal(false)}
+                            className="w-full mt-4 py-3 text-gray-500 font-semibold hover:text-gray-700 transition-all font-medium"
+                        >
+                            Cancel
+                        </button>
+                    </motion.div>
+                </div>
+            )}
         </div>
+
     );
 };
 

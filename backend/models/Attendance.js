@@ -20,7 +20,7 @@ const attendanceSchema = new mongoose.Schema({
     },
     session_status: {
         type: String,
-        enum: ['Active', 'Completed', 'Forced Logout'],
+        enum: ['Active', 'Completed', 'Forced Logout', 'Auto Logout'],
         default: 'Active'
     },
     logout_reason: {

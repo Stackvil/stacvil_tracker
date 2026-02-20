@@ -364,4 +364,89 @@ const deleteTask = async (req, res) => {
     }
 };
 
-module.exports = { getEmployees, getDailyReports, getAnalytics, createEmployee, assignTask, getAdminTasks, respondToDecline, deleteEmployee, deleteTask };
+// @desc    Get all login requests (Admin only)
+const getLoginRequests = async (req, res) => {
+    try {
+        const LoginRequest = require('../models/LoginRequest');
+        const employees = await Employee.find({});
+        const empMap = employees.reduce((acc, e) => {
+            acc[e.emp_no] = {
+                name: e.name,
+                full_name: e.full_name,
+                profile_picture: e.profile_picture
+            };
+            return acc;
+        }, {});
+
+        const requests = await LoginRequest.find({}).sort({ createdAt: -1 });
+
+        const result = requests.map(r => ({
+            id: r._id,
+            emp_no: r.emp_no,
+            emp_name: empMap[r.emp_no]?.full_name || empMap[r.emp_no]?.name || 'Unknown',
+            request_time: r.request_time,
+            reason: r.reason,
+            status: r.status,
+            device_info: r.device_info,
+            approved_by: r.approved_by,
+            approval_time: r.approval_time,
+            expiry_time: r.expiry_time
+        }));
+
+        res.json(result);
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Approve or reject login request (Admin only)
+const handleLoginRequest = async (req, res) => {
+    const { id } = req.params;
+    const { action } = req.body; // 'Approved' or 'Rejected'
+    const admin_emp_no = req.user.emp_no;
+
+    try {
+        const LoginRequest = require('../models/LoginRequest');
+        const request = await LoginRequest.findById(id);
+
+        if (!request) {
+            return res.status(404).json({ message: 'Request not found' });
+        }
+
+        if (action === 'Approved') {
+            request.status = 'Approved';
+            request.approved_by = admin_emp_no;
+            request.approval_time = new Date();
+            // Approval valid for 1 hour
+            request.expiry_time = new Date(Date.now() + 60 * 60 * 1000);
+        } else if (action === 'Rejected') {
+            request.status = 'Rejected';
+            request.approved_by = admin_emp_no;
+            request.approval_time = new Date();
+        } else {
+            return res.status(400).json({ message: 'Invalid action' });
+        }
+
+        await request.save();
+        res.json({ message: `Login request ${action.toLowerCase()} successfully`, request });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = {
+    getEmployees,
+    getDailyReports,
+    getAnalytics,
+    createEmployee,
+    assignTask,
+    getAdminTasks,
+    respondToDecline,
+    deleteEmployee,
+    deleteTask,
+    getLoginRequests,
+    handleLoginRequest
+};
+

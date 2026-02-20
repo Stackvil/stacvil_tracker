@@ -1,6 +1,18 @@
 const express = require('express');
 const router = express.Router();
-const { getEmployees, getDailyReports, getAnalytics, createEmployee, assignTask, getAdminTasks, respondToDecline, deleteEmployee, deleteTask } = require('../controllers/adminController');
+const {
+    getEmployees,
+    getDailyReports,
+    getAnalytics,
+    createEmployee,
+    assignTask,
+    getAdminTasks,
+    respondToDecline,
+    deleteEmployee,
+    deleteTask,
+    getLoginRequests,
+    handleLoginRequest
+} = require('../controllers/adminController');
 const { protect, admin } = require('../middleware/auth');
 
 router.get('/employees', protect, admin, getEmployees);
@@ -12,5 +24,9 @@ router.post('/tasks/assign', protect, admin, assignTask);
 router.get('/tasks', protect, admin, getAdminTasks);
 router.post('/tasks/respond/:id', protect, admin, respondToDecline);
 router.delete('/tasks/:id', protect, admin, deleteTask);
+
+router.get('/login-requests', protect, admin, getLoginRequests);
+router.post('/handle-login-request/:id', protect, admin, handleLoginRequest);
+
 
 module.exports = router;

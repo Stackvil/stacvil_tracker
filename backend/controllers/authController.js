@@ -1,5 +1,6 @@
 const Employee = require('../models/Employee');
 const Attendance = require('../models/Attendance');
+const LoginRequest = require('../models/LoginRequest');
 const jwt = require('jsonwebtoken');
 const { getISTTime } = require('./utilsController');
 const crypto = require('crypto');
@@ -64,6 +65,34 @@ const loginEmployee = async (req, res) => {
 
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // OFFICE HOURS CHECK (Employee Only)
+        const istTimeNow = getISTTime();
+        const currentHourIST = parseInt(istTimeNow.datetime.split('T')[1].split(':')[0]);
+
+        if (employee.role === 'employee' && currentHourIST >= 19) {
+            // Check for valid approval
+            const now = new Date();
+            const approval = await LoginRequest.findOne({
+                emp_no: employee.emp_no,
+                status: 'Approved',
+                expiry_time: { $gt: now }
+            });
+
+            if (!approval) {
+                // Check if they have a pending request
+                const pendingRequest = await LoginRequest.findOne({
+                    emp_no: employee.emp_no,
+                    status: 'Pending'
+                });
+
+                return res.status(403).json({
+                    message: 'Login is restricted after office hours. Please request admin approval.',
+                    hasPendingRequest: !!pendingRequest,
+                    restricted: true
+                });
+            }
         }
 
         if (!process.env.JWT_SECRET) {
@@ -278,4 +307,41 @@ const changePassword = async (req, res) => {
     }
 };
 
-module.exports = { registerEmployee, loginEmployee, logoutEmployee, changePassword };
+// @desc    Request login permission after hours
+// @route   POST /api/auth/login-request
+const requestLoginPermission = async (req, res) => {
+    const { emp_no, reason, device_info } = req.body;
+    const cleanEmpNo = emp_no?.trim().toUpperCase();
+
+    try {
+        const employee = await Employee.findOne({ emp_no: cleanEmpNo });
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee not found' });
+        }
+
+        // Check for existing pending request
+        const existingRequest = await LoginRequest.findOne({
+            emp_no: cleanEmpNo,
+            status: 'Pending'
+        });
+
+        if (existingRequest) {
+            return res.status(400).json({ message: 'You already have a pending login request.' });
+        }
+
+        const loginRequest = new LoginRequest({
+            emp_no: cleanEmpNo,
+            reason: reason || 'Late work requirement',
+            device_info: device_info || 'Unknown'
+        });
+
+        await loginRequest.save();
+        res.status(201).json({ message: 'Login request submitted successfully. Please wait for admin approval.' });
+    } catch (error) {
+        console.error('Login Request Error:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = { registerEmployee, loginEmployee, logoutEmployee, changePassword, requestLoginPermission };
+
