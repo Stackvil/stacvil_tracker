@@ -429,6 +429,16 @@ const handleLoginRequest = async (req, res) => {
         }
 
         await request.save();
+
+        // Notify employee via socket
+        const io = req.app.get('io');
+        if (io) {
+            io.to(request.emp_no).emit('login_request_result', {
+                status: action,
+                message: action === 'Approved' ? 'Your login request has been approved.' : 'Your login request has been rejected.'
+            });
+        }
+
         res.json({ message: `Login request ${action.toLowerCase()} successfully`, request });
     } catch (error) {
         console.error(error);

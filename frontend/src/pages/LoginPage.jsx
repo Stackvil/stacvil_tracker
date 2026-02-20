@@ -3,10 +3,12 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import { LogIn, User, Lock, AlertCircle } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { io } from 'socket.io-client';
 
 const LoginPage = () => {
     const [empNo, setEmpNo] = useState('');
     const [password, setPassword] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [showRequestModal, setShowRequestModal] = useState(false);
     const [requestReason, setRequestReason] = useState('');
@@ -22,8 +24,29 @@ const LoginPage = () => {
         }
     }, [searchParams]);
 
+    // Handle Socket for Login Request
+    useEffect(() => {
+        if (showRequestModal && empNo) {
+            const newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+
+            newSocket.emit('join_room', empNo.trim().toUpperCase());
+
+            newSocket.on('login_request_result', (data) => {
+                if (data.status === 'Approved') {
+                    setRequestStatus({ type: 'success', message: 'Request approved! You can now log in.' });
+                    // Optional: auto-login
+                    // handleSubmit({ preventDefault: () => { } });
+                } else if (data.status === 'Rejected') {
+                    setRequestStatus({ type: 'error', message: 'Your login request was rejected by admin.' });
+                }
+            });
+
+            return () => newSocket.disconnect();
+        }
+    }, [showRequestModal, empNo]);
+
     const handleSubmit = async (e) => {
-        e.preventDefault();
+        if (e) e.preventDefault();
         setError('');
         setIsSubmitting(true);
 
@@ -152,10 +175,13 @@ const LoginPage = () => {
 
                         {requestStatus?.message ? (
                             <div className={`p-4 rounded-xl mb-6 text-sm ${requestStatus.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
-                                    requestStatus.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
-                                        'bg-blue-50 text-blue-700 border border-blue-200'
+                                requestStatus.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
+                                    'bg-blue-50 text-blue-700 border border-blue-200'
                                 }`}>
                                 {requestStatus.message}
+                                {requestStatus.type === 'success' && (
+                                    <p className="mt-2 font-bold animate-pulse">Waiting for admin approval...</p>
+                                )}
                             </div>
                         ) : (
                             <form onSubmit={handleRequestSubmit} className="space-y-4">
@@ -180,7 +206,10 @@ const LoginPage = () => {
                         )}
 
                         <button
-                            onClick={() => setShowRequestModal(false)}
+                            onClick={() => {
+                                setShowRequestModal(false);
+                                setRequestStatus(null);
+                            }}
                             className="w-full mt-4 py-3 text-gray-500 font-semibold hover:text-gray-700 transition-all font-medium"
                         >
                             Cancel
