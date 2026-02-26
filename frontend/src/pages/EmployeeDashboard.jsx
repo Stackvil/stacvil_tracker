@@ -171,13 +171,20 @@ const EmployeeDashboard = () => {
                     <p className="text-gray-500">Track and manage your tasks.</p>
                 </div>
                 <div className="flex flex-wrap gap-3">
-                    <button
-                        onClick={() => setShowAddTaskModal(true)}
-                        className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold flex items-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
-                    >
-                        <Plus className="w-4 h-4" />
-                        Add Task
-                    </button>
+                    {!user?.isRestricted ? (
+                        <button
+                            onClick={() => setShowAddTaskModal(true)}
+                            className="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold flex items-center gap-2 hover:bg-indigo-700 shadow-lg shadow-indigo-100 transition-all"
+                        >
+                            <Plus className="w-4 h-4" />
+                            Add Task
+                        </button>
+                    ) : (
+                        <div className="px-4 py-2 bg-amber-50 text-amber-700 rounded-xl font-semibold flex items-center gap-2 border border-amber-100">
+                            <Lock className="w-4 h-4" />
+                            Tasks Locked (After 7 PM)
+                        </div>
+                    )}
                     <button
                         onClick={() => setShowPasswordModal(true)}
                         className="px-4 py-2 bg-gray-100 text-gray-700 rounded-xl font-semibold flex items-center gap-2 hover:bg-gray-200 transition-all"
@@ -547,18 +554,30 @@ const TaskCard = ({ task, onAccept, onDecline, onUpdateProgress }) => {
                     {isInProgress && (
                         <div className="mt-3 bg-gray-50 p-3 rounded-xl border border-gray-100">
                             <div className="flex justify-between items-center mb-1.5">
-                                <span className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase">Update Progress</span>
+                                <span className="text-[10px] sm:text-xs font-bold text-gray-500 uppercase">
+                                    {user?.isRestricted ? 'Progress Locked' : 'Update Progress'}
+                                </span>
                                 <span className="text-xs sm:text-sm font-black text-indigo-600">{localPct}%</span>
                             </div>
-                            <input
-                                type="range"
-                                min="0" max="100" step="1"
-                                value={localPct}
-                                onChange={(e) => { setIsDragging(true); setLocalPct(parseInt(e.target.value)); }}
-                                onMouseUp={handleSliderRelease}
-                                onTouchEnd={handleSliderRelease}
-                                className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
-                            />
+                            {!user?.isRestricted ? (
+                                <input
+                                    type="range"
+                                    min="0" max="100" step="1"
+                                    value={localPct}
+                                    onChange={(e) => { setIsDragging(true); setLocalPct(parseInt(e.target.value)); }}
+                                    onMouseUp={handleSliderRelease}
+                                    onTouchStart={() => setIsDragging(true)}
+                                    onTouchEnd={handleSliderRelease}
+                                    className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                                />
+                            ) : (
+                                <div className="w-full h-2 bg-gray-200 rounded-lg overflow-hidden">
+                                    <div
+                                        className="h-full bg-indigo-300 transition-all duration-500"
+                                        style={{ width: `${localPct}%` }}
+                                    />
+                                </div>
+                            )}
                         </div>
                     )}
 

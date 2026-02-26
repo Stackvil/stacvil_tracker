@@ -2,7 +2,7 @@ const Employee = require('../models/Employee');
 const Attendance = require('../models/Attendance');
 const LoginRequest = require('../models/LoginRequest');
 const jwt = require('jsonwebtoken');
-const utilsController = require('./utilsController');
+const { getISTTime, getServerTime } = require('./utilsController');
 const crypto = require('crypto');
 const Session = require('../models/Session');
 
@@ -68,11 +68,10 @@ const loginEmployee = async (req, res) => {
         }
 
         // OFFICE HOURS CHECK (Employee Only)
-        const istTimeNow = utilsController.getISTTime();
-        const currentHourIST = parseInt(istTimeNow.datetime.split('T')[1].split(':')[0]);
+        const istTimeNow = getISTTime();
         let isRestricted = false;
 
-        if (employee.role === 'employee' && currentHourIST >= 19) {
+        if (employee.role === 'employee' && (new Date() >= istTimeNow.sevenPM || istTimeNow.hour >= 19)) {
             // Check for valid approval
             const now = new Date();
             const approval = await LoginRequest.findOne({
@@ -134,7 +133,7 @@ const loginEmployee = async (req, res) => {
             { expiresIn: process.env.JWT_EXPIRE || '24h' }
         );
 
-        const istTime = utilsController.getISTTime();
+        const istTime = getISTTime();
         const today = istTime.date;
         const now = istTime.datetime;
 

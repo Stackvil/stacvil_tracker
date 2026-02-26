@@ -4,7 +4,7 @@ import { Clock } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 
 const LiveClock = () => {
-    const { user } = useContext(AuthContext);
+    const { user, logout } = useContext(AuthContext);
     const [currentTime, setCurrentTime] = useState(null);
     const [workDuration, setWorkDuration] = useState(0); // in seconds
     const syncRef = useRef({
@@ -47,8 +47,9 @@ const LiveClock = () => {
             const elapsedSinceSync = (performance.now() - syncRef.current.performanceStartTime) / 1000; // seconds
 
             // 1. Update Clock
+            let nowInIST = null;
             if (syncRef.current.serverStartTime !== null) {
-                const nowInIST = new Date(syncRef.current.serverStartTime + (elapsedSinceSync * 1000));
+                nowInIST = new Date(syncRef.current.serverStartTime + (elapsedSinceSync * 1000));
                 const options = {
                     timeZone: 'Asia/Kolkata',
                     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
@@ -56,9 +57,37 @@ const LiveClock = () => {
                 setCurrentTime(new Intl.DateTimeFormat('en-IN', options).format(nowInIST));
             }
 
-            // 2. Update Work Duration
-            const currentDuration = syncRef.current.workDurationStart + elapsedSinceSync;
-            setWorkDuration(currentDuration);
+            // 2. Update Work Duration & Handle Auto-Logout
+            if (nowInIST) {
+                // Calculate 7 PM IST for today robustly
+                const year = nowInIST.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+                const sevenPMIST = new Date(`${year}T19:00:00+05:30`);
+
+                if (nowInIST >= sevenPMIST) {
+                    // Logic for employees
+                    if (user?.role?.toLowerCase() === 'employee' && !user.isRestricted) {
+                        // Force logout if not already in restricted mode
+                        // We use a small delay or flag to avoid race conditions
+                        if (!syncRef.current.loggedOut) {
+                            syncRef.current.loggedOut = true;
+                            console.log('Office hours ended. Triggering auto-logout...');
+                            logout();
+                        }
+                    }
+
+                    // Calculate how many seconds from sync until 7 PM
+                    const msUntilSevenPM = sevenPMIST.getTime() - syncRef.current.serverStartTime;
+                    const elapsedUntilSevenPM = Math.max(0, msUntilSevenPM / 1000);
+
+                    setWorkDuration(syncRef.current.workDurationStart + elapsedUntilSevenPM);
+                } else {
+                    const currentDuration = syncRef.current.workDurationStart + elapsedSinceSync;
+                    setWorkDuration(currentDuration);
+                }
+            } else {
+                const currentDuration = syncRef.current.workDurationStart + elapsedSinceSync;
+                setWorkDuration(currentDuration);
+            }
         };
 
         syncTime();

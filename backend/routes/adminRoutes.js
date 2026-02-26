@@ -11,7 +11,9 @@ const {
     deleteEmployee,
     deleteTask,
     getLoginRequests,
-    handleLoginRequest
+    handleLoginRequest,
+    forceLogoutAll,
+    forceLogoutEmployee
 } = require('../controllers/adminController');
 const { protect, admin } = require('../middleware/auth');
 
@@ -27,6 +29,8 @@ router.delete('/tasks/:id', protect, admin, deleteTask);
 
 router.get('/login-requests', protect, admin, getLoginRequests);
 router.post('/handle-login-request/:id', protect, admin, handleLoginRequest);
+router.post('/force-logout-all', protect, admin, forceLogoutAll);
+router.post('/force-logout/:emp_no', protect, admin, forceLogoutEmployee);
 
 
 module.exports = router;

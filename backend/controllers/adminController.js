@@ -12,7 +12,27 @@ const getEmployees = async (req, res) => {
         const today = istTime.date;
 
         const employees = await Employee.find({});
-        const activeAttendance = await Attendance.find({ date: today, logout_time: null });
+        const sevenPMIST = istTime.sevenPM;
+        const now = new Date();
+        const isPastSevenPM = now >= sevenPMIST || istTime.hour >= 19;
+
+        // Cleanup: If past 7pm, close any active today's sessions
+        if (isPastSevenPM) {
+            await Attendance.updateMany(
+                { date: today, logout_time: null },
+                {
+                    $set: {
+                        logout_time: sevenPMIST.toISOString(),
+                        session_status: 'Auto Logout',
+                        logout_reason: 'Office hours ended'
+                    }
+                }
+            );
+        }
+
+        const activeAttendance = isPastSevenPM
+            ? []
+            : await Attendance.find({ date: today, logout_time: null });
         const activeEmpNos = new Set(activeAttendance.map(a => a.emp_no));
 
         const result = employees.map(e => ({
@@ -39,11 +59,30 @@ const getDailyReports = async (req, res) => {
     const { date } = req.query;
     const istTime = getISTTime();
     const filterDate = date || istTime.date;
+    const isFilterToday = filterDate === istTime.date;
+
+    const sevenPMIST = istTime.sevenPM;
+    const now = new Date();
+    const isPastSevenPM = now >= sevenPMIST || istTime.hour >= 19;
 
     try {
+        // Silent cleanup: If it's past 7 PM, close any active sessions in the background
+        if (isFilterToday && isPastSevenPM) {
+            await Attendance.updateMany(
+                { date: filterDate, logout_time: null },
+                {
+                    $set: {
+                        logout_time: sevenPMIST.toISOString(),
+                        session_status: 'Auto Logout',
+                        logout_reason: 'Office hours ended'
+                    }
+                }
+            );
+        }
+
         const employees = await Employee.find({ role: 'employee' }).sort({ emp_no: 1 });
         const attendances = await Attendance.find({ date: filterDate });
-        const tasksQuery = filterDate === istTime.date
+        const tasksQuery = isFilterToday
             ? {
                 $or: [
                     { due_date: filterDate },
@@ -66,43 +105,50 @@ const getDailyReports = async (req, res) => {
             const empAttendances = attendances.filter(a => a.emp_no === e.emp_no);
             const empTasks = tasks.filter(t => t.emp_no === e.emp_no);
 
-            // For simplicity, pick the first task found for that date if multiple exist
             const t = empTasks[0] || {};
-
             const formatTime = (iso) => iso ? new Date(iso).toLocaleTimeString('en-GB') : 'N/A';
 
             let totalMs = 0;
             const sessions = empAttendances.map(att => {
+                let loginTime = new Date(att.login_time);
+                let logoutTime = att.logout_time ? new Date(att.logout_time) : (isFilterToday && isPastSevenPM ? sevenPMIST : null);
+
                 let durationMs = 0;
-                if (att.login_time && att.logout_time) {
-                    durationMs = new Date(att.logout_time) - new Date(att.login_time);
+                if (loginTime && logoutTime) {
+                    // Cap duration at 7 PM
+                    const effectiveLogout = logoutTime > sevenPMIST && isFilterToday ? sevenPMIST : logoutTime;
+                    durationMs = effectiveLogout - loginTime;
+                    if (durationMs < 0) durationMs = 0;
                     totalMs += durationMs;
                 }
+
                 return {
                     login: formatTime(att.login_time),
-                    logout: formatTime(att.logout_time),
-                    is_active: !att.logout_time
+                    logout: att.logout_time ? formatTime(att.logout_time) : (isFilterToday && isPastSevenPM ? formatTime(sevenPMIST) : 'N/A'),
+                    is_active: !att.logout_time && !(isFilterToday && isPastSevenPM)
                 };
             });
 
             let working_hours = 'N/A';
             let is_half_day = false;
             if (empAttendances.length > 0) {
-                const hasActive = empAttendances.some(a => !a.logout_time);
+                const hasActive = empAttendances.some(a => !a.logout_time && !(isFilterToday && isPastSevenPM));
+
                 if (totalMs > 0 || !hasActive) {
                     const hrs = Math.floor(totalMs / 3600000);
                     const mins = Math.floor((totalMs % 3600000) / 60000);
-
-                    // Half-day logic: less than 5 hours (5 * 3600000 ms)
                     is_half_day = totalMs > 0 && totalMs < 5 * 3600000;
 
                     working_hours = `${hrs}:${mins.toString().padStart(2, '0')}:00`;
                     if (is_half_day) working_hours += ' (Half Day)';
                     if (hasActive) working_hours += ' (Active)';
-                } else {
+                } else if (hasActive) {
                     working_hours = 'Running';
+                } else {
+                    working_hours = '0:00:00';
                 }
             }
+            // ... rest of mapping
 
             return {
                 emp_no: e.emp_no,
@@ -453,6 +499,90 @@ const handleLoginRequest = async (req, res) => {
     }
 };
 
+// @desc    Force logout all active employees
+const forceLogoutAll = async (req, res) => {
+    try {
+        const Session = require('../models/Session');
+        const istTime = getISTTime();
+        const now = istTime.datetime;
+
+        // 1. Find and close ALL active attendance records (even if from previous days)
+        const activeRecords = await Attendance.find({
+            logout_time: null
+        });
+
+        for (const record of activeRecords) {
+            // If it's today's record and it's past 7 PM, use 7 PM as logout time
+            // Otherwise use current IST time
+            record.logout_time = (record.date === istTime.date && new Date() > istTime.sevenPM)
+                ? istTime.sevenPM.toISOString()
+                : now;
+            record.session_status = 'Forced Logout';
+            record.logout_reason = 'Terminated by Admin';
+            await record.save();
+        }
+
+        // 2. Deactivate all active sessions in the database
+        await Session.updateMany({ is_active: true }, { is_active: false });
+
+        // 3. Notify all employees via socket
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('force_logout', {
+                message: 'Administrator has ended all active working sessions.'
+            });
+        }
+
+        res.json({ message: 'All active sessions have been terminated successfully.' });
+    } catch (error) {
+        console.error('Force logout all failed:', error);
+        res.status(500).json({ message: 'Server error while terminating sessions' });
+    }
+};
+
+// @desc    Force logout a specific employee
+const forceLogoutEmployee = async (req, res) => {
+    const { emp_no } = req.params;
+    try {
+        const Session = require('../models/Session');
+        const istTime = getISTTime();
+        const now = istTime.datetime;
+        const today = istTime.date;
+
+        // 1. Find and close any active attendance record for this employee (any date)
+        const record = await Attendance.findOne({
+            emp_no,
+            logout_time: null
+        }).sort({ login_time: -1 });
+
+        if (record) {
+            const isToday = record.date === istTime.date;
+            const pastSeven = new Date() > istTime.sevenPM;
+
+            record.logout_time = (isToday && pastSeven) ? istTime.sevenPM.toISOString() : now;
+            record.session_status = 'Forced Logout';
+            record.logout_reason = 'Terminated by Admin';
+            await record.save();
+        }
+
+        // 2. Deactivate active sessions for this employee
+        await Session.updateMany({ emp_no, is_active: true }, { is_active: false });
+
+        // 3. Notify the employee via specific socket room
+        const io = req.app.get('io');
+        if (io) {
+            io.to(emp_no).emit('force_logout', {
+                message: 'Administrator has ended your active working session.'
+            });
+        }
+
+        res.json({ success: true, message: `Session for employee #${emp_no} has been terminated.` });
+    } catch (error) {
+        console.error(`Force logout for ${emp_no} failed:`, error);
+        res.status(500).json({ message: 'Server error while terminating session' });
+    }
+};
+
 module.exports = {
     getEmployees,
     getDailyReports,
@@ -464,6 +594,8 @@ module.exports = {
     deleteEmployee,
     deleteTask,
     getLoginRequests,
-    handleLoginRequest
+    handleLoginRequest,
+    forceLogoutAll,
+    forceLogoutEmployee
 };
 

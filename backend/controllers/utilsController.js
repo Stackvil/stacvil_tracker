@@ -1,26 +1,28 @@
 // Helper function to get current IST time
 const getISTTime = () => {
     const now = new Date();
+    // Using Intl to get Asia/Kolkata date parts
+    const options = { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false };
+    const formatter = new Intl.DateTimeFormat('en-CA', options);
+    const parts = formatter.formatToParts(now);
+    const getPart = (type) => parts.find(p => p.type === type).value;
 
-    // Create a date object in IST
-    const istOffset = 5.5 * 60 * 60 * 1000;
-    const istTime = new Date(now.getTime() + istOffset);
+    const year = parseInt(getPart('year'));
+    const month = parseInt(getPart('month')) - 1; // 0-indexed
+    const day = parseInt(getPart('day'));
+    const hour = parseInt(getPart('hour'));
 
-    // Format to YYYY-MM-DD
-    const year = istTime.getUTCFullYear();
-    const month = String(istTime.getUTCMonth() + 1).padStart(2, '0');
-    const day = String(istTime.getUTCDate()).padStart(2, '0');
-    const hours = String(istTime.getUTCHours()).padStart(2, '0');
-    const minutes = String(istTime.getUTCMinutes()).padStart(2, '0');
-    const seconds = String(istTime.getUTCSeconds()).padStart(2, '0');
+    const formattedDate = `${getPart('year')}-${getPart('month')}-${getPart('day')}`;
+    const formattedDateTime = `${formattedDate}T${getPart('hour')}:${getPart('minute')}:${getPart('second')}+05:30`;
 
-    const formattedDate = `${year}-${month}-${day}`;
-    // Standard ISO 8601 with +05:30 offset for IST
-    const formattedDateTime = `${year}-${month}-${day}T${hours}:${minutes}:${seconds}+05:30`;
+    // 19:00 IST is always 13:30 UTC of the same local day
+    const sevenPM = new Date(Date.UTC(year, month, day, 13, 30, 0));
 
     return {
         date: formattedDate,
         datetime: formattedDateTime,
+        sevenPM: sevenPM,
+        hour: hour,
         timestamp: now
     };
 };

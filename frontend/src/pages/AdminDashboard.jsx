@@ -9,7 +9,7 @@ import {
 import { Bar as BarComponent, Pie as PieComponent } from 'react-chartjs-2';
 import {
     Users, CheckCircle, Clock, TrendingUp, ArrowRight,
-    CheckCircle2, XCircle, AlertCircle, ClipboardList
+    CheckCircle2, XCircle, AlertCircle, ClipboardList, LogOut
 } from 'lucide-react';
 
 ChartJS.register(
@@ -32,6 +32,7 @@ const AdminDashboard = () => {
     const [todayReport, setTodayReport] = useState([]);
     const [leavesToday, setLeavesToday] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [terminating, setTerminating] = useState(false);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [isModalOpen, setIsModalOpen] = useState(false);
 
@@ -60,6 +61,39 @@ const AdminDashboard = () => {
             console.error('Failed to fetch analytics:', error);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleForceLogoutAll = async () => {
+        if (!window.confirm("Are you sure you want to end ALL active employee sessions? This will force-logout everyone currently working.")) return;
+
+        setTerminating(true);
+        try {
+            const response = await api.post('/admin/force-logout-all');
+            alert(response.data.message);
+            await fetchAll();
+        } catch (error) {
+            alert(error.response?.data?.message || 'Failed to terminate sessions');
+        } finally {
+            setTerminating(false);
+        }
+    };
+
+    const handleForceLogoutEmployee = async (emp_no) => {
+        if (!window.confirm(`Are you sure you want to end session for employee #${emp_no}?`)) return;
+
+        try {
+            const response = await api.post(`/admin/force-logout/${emp_no}`);
+            alert(response.data.message);
+            await fetchAll();
+            // Refresh modal if active
+            if (selectedCategory && selectedCategory.title === 'Active Now') {
+                const refreshedReport = await api.get(`/admin/reports/daily?date=${today}`);
+                const updatedActiveNow = refreshedReport.data.filter(r => r.login_time !== 'N/A' && r.logout_time === 'N/A');
+                setSelectedCategory(prev => ({ ...prev, list: updatedActiveNow }));
+            }
+        } catch (error) {
+            alert(error.response?.data?.message || 'Failed to terminate session');
         }
     };
 
@@ -141,7 +175,7 @@ const AdminDashboard = () => {
 
             {/* Today's Attendance Summary */}
             <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-6">
-                <div className="flex items-center justify-between mb-5">
+                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-5">
                     <div>
                         <h3 className="text-lg font-bold text-gray-800 flex items-center gap-2">
                             <ClipboardList className="w-5 h-5 text-indigo-500" />
@@ -150,9 +184,12 @@ const AdminDashboard = () => {
                         </h3>
                         <p className="text-xs text-gray-400 mt-0.5">Live attendance & task status for all employees</p>
                     </div>
-                    <Link to="/admin/reports" className="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">
-                        Full Reports <ArrowRight className="w-4 h-4" />
-                    </Link>
+
+                    <div className="flex items-center gap-3">
+                        <Link to="/admin/reports" className="flex items-center gap-1 text-sm font-semibold text-indigo-600 hover:text-indigo-800 transition-colors">
+                            Full Reports <ArrowRight className="w-4 h-4" />
+                        </Link>
+                    </div>
                 </div>
 
                 {/* Mini summary pills */}
@@ -162,6 +199,32 @@ const AdminDashboard = () => {
                     <Pill color="bg-red-50 text-red-600 border-red-200 cursor-pointer hover:bg-red-100" label={`${absentTodayCount} Absent`} onClick={() => handlePillClick('Absent')} />
                     <Pill color="bg-blue-50 text-blue-700 border-blue-200 cursor-pointer hover:bg-blue-100" label={`${activeNow} Active Now`} onClick={() => handlePillClick('Active Now')} />
                     <Pill color="bg-indigo-50 text-indigo-700 border-indigo-200 cursor-pointer hover:bg-indigo-100" label={`${completedToday} Tasks Done`} onClick={() => handlePillClick('Tasks Done')} />
+                </div>
+
+                {/* Powerful Action Card for Ending All Sessions - Always visible in APK */}
+                <div className={`mb-6 p-5 rounded-2xl border flex flex-col sm:flex-row items-center justify-between gap-4 shadow-sm transition-all ${activeNow > 0 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-100'}`}>
+                    <div className="flex items-center gap-4">
+                        <div className={`w-12 h-12 rounded-2xl flex items-center justify-center shadow-lg transition-colors ${activeNow > 0 ? 'bg-red-600 text-white' : 'bg-gray-200 text-gray-400 shadow-none'}`}>
+                            <Users className="w-6 h-6" />
+                        </div>
+                        <div>
+                            <h4 className={`font-extrabold text-base transition-colors ${activeNow > 0 ? 'text-red-900' : 'text-gray-500'}`}>{activeNow} Active Sessions</h4>
+                            <p className={`text-xs font-bold uppercase tracking-wide transition-colors ${activeNow > 0 ? 'text-red-600' : 'text-gray-400'}`}>
+                                {activeNow > 0 ? 'Emergency Logout Controls' : 'System Clear / No Active Sessions'}
+                            </p>
+                        </div>
+                    </div>
+                    <button
+                        onClick={handleForceLogoutAll}
+                        disabled={terminating || activeNow === 0}
+                        className={`w-full sm:w-auto flex items-center justify-center gap-3 px-8 py-4 rounded-2xl text-sm font-black uppercase tracking-wider transition-all ${terminating || activeNow === 0
+                            ? 'bg-gray-200 text-gray-400 cursor-not-allowed border border-gray-100'
+                            : 'bg-red-600 text-white hover:bg-red-700 hover:shadow-red-200/50 shadow-xl active:scale-95'
+                            }`}
+                    >
+                        <LogOut className={`w-5 h-5 ${terminating ? 'animate-spin' : ''}`} />
+                        {terminating ? 'Processing...' : 'End All Active Sessions'}
+                    </button>
                 </div>
 
                 {todayReport.length === 0 ? (
@@ -321,6 +384,23 @@ const AdminDashboard = () => {
                                                 <div className="h-full bg-indigo-500 rounded-full" style={{ width: `${r.completion_percentage || 0}%` }} />
                                             </div>
                                         </div>
+
+                                        {/* Force Logout Button for Mobile */}
+                                        {r.login_time !== 'N/A' && r.logout_time === 'N/A' && (
+                                            <div className="mt-4 pt-3 border-t border-gray-50">
+                                                <button
+                                                    onClick={() => handleForceLogoutEmployee(r.emp_no)}
+                                                    disabled={terminating}
+                                                    className={`w-full flex items-center justify-center gap-2 py-2 rounded-xl text-xs font-bold transition-all ${terminating
+                                                        ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                                                        : 'bg-red-50 text-red-600 hover:bg-red-100 border border-red-100'
+                                                        }`}
+                                                >
+                                                    <LogOut className={`w-3.5 h-3.5 ${terminating ? 'animate-spin' : ''}`} />
+                                                    {terminating ? 'Ending...' : 'End Session'}
+                                                </button>
+                                            </div>
+                                        )}
                                     </div>
                                 );
                             })}
@@ -350,66 +430,83 @@ const AdminDashboard = () => {
             </div>
 
             {/* Employee List Modal */}
-            {isModalOpen && selectedCategory && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all animate-in fade-in active:scale-100">
-                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
-                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
-                            <h3 className="text-xl font-bold text-gray-800">{selectedCategory.title}</h3>
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600"
-                            >
-                                <XCircle className="w-6 h-6" />
-                            </button>
-                        </div>
-                        <div className="max-h-[60vh] overflow-y-auto p-4 custom-scrollbar">
-                            {selectedCategory.list.length === 0 ? (
-                                <div className="text-center py-10 text-gray-400 flex flex-col items-center gap-2">
-                                    <AlertCircle className="w-10 h-10 opacity-20" />
-                                    <p>No employees found in this category</p>
-                                </div>
-                            ) : (
-                                <div className="space-y-3">
-                                    {selectedCategory.list.map((emp, idx) => (
-                                        <div key={idx} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100">
-                                            {emp.profile_picture ? (
-                                                <img src={emp.profile_picture} alt={emp.name} className="w-10 h-10 rounded-lg object-cover shadow-sm" />
-                                            ) : (
-                                                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-bold text-sm">
-                                                    {(emp.full_name || emp.name)?.charAt(0)}
-                                                </div>
-                                            )}
-                                            <div className="flex-1 min-w-0">
-                                                <p className="font-bold text-gray-800 truncate text-sm">{emp.full_name || emp.name}</p>
-                                                <p className="text-xs text-gray-500 font-medium">#{emp.emp_no}</p>
-                                            </div>
-                                            <div className="text-right shrink-0">
-                                                {emp.login_time !== 'N/A' ? (
-                                                    <div className="space-y-0.5">
-                                                        <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">Logged In</p>
-                                                        <p className="text-xs font-bold text-indigo-600">{emp.login_time}</p>
-                                                    </div>
+            {
+                isModalOpen && selectedCategory && (
+                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all animate-in fade-in active:scale-100">
+                        <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                            <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                                <h3 className="text-xl font-bold text-gray-800">{selectedCategory.title}</h3>
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600"
+                                >
+                                    <XCircle className="w-6 h-6" />
+                                </button>
+                            </div>
+                            <div className="max-h-[60vh] overflow-y-auto p-4 custom-scrollbar">
+                                {selectedCategory.list.length === 0 ? (
+                                    <div className="text-center py-10 text-gray-400 flex flex-col items-center gap-2">
+                                        <AlertCircle className="w-10 h-10 opacity-20" />
+                                        <p>No employees found in this category</p>
+                                    </div>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {selectedCategory.list.map((emp, idx) => (
+                                            <div key={idx} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100">
+                                                {emp.profile_picture ? (
+                                                    <img src={emp.profile_picture} alt={emp.name} className="w-10 h-10 rounded-lg object-cover shadow-sm" />
                                                 ) : (
-                                                    <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-bold uppercase">Absent</span>
+                                                    <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-bold text-sm">
+                                                        {(emp.full_name || emp.name)?.charAt(0)}
+                                                    </div>
                                                 )}
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="font-bold text-gray-800 truncate text-sm">{emp.full_name || emp.name}</p>
+                                                    <p className="text-xs text-gray-500 font-medium">#{emp.emp_no}</p>
+                                                </div>
+                                                <div className="text-right shrink-0 flex items-center gap-3">
+                                                    {emp.login_time !== 'N/A' ? (
+                                                        <>
+                                                            <div className="space-y-0.5">
+                                                                <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">Logged In</p>
+                                                                <p className="text-xs font-bold text-indigo-600">{emp.login_time}</p>
+                                                            </div>
+                                                            {selectedCategory.title === 'Active Now' && (
+                                                                <button
+                                                                    onClick={() => handleForceLogoutEmployee(emp.emp_no)}
+                                                                    disabled={terminating}
+                                                                    className={`p-2 rounded-lg transition-colors border group ${terminating
+                                                                        ? 'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed'
+                                                                        : 'bg-red-50 text-red-600 hover:bg-red-100 border-red-100'
+                                                                        }`}
+                                                                    title="End Session"
+                                                                >
+                                                                    <LogOut className={`w-4 h-4 ${!terminating && 'group-hover:scale-110'} transition-transform`} />
+                                                                </button>
+                                                            )}
+                                                        </>
+                                                    ) : (
+                                                        <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-bold uppercase">Absent</span>
+                                                    )}
+                                                </div>
                                             </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
-                        <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
-                            <button
-                                onClick={() => setIsModalOpen(false)}
-                                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-indigo-200 active:scale-95"
-                            >
-                                Close
-                            </button>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                            <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                                <button
+                                    onClick={() => setIsModalOpen(false)}
+                                    className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-indigo-200 active:scale-95"
+                                >
+                                    Close
+                                </button>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </div>
+                )
+            }
+        </div >
     );
 };
 

@@ -4,15 +4,23 @@ const { getISTTime } = require('./utilsController');
 
 // Helper to format attendance records
 const formatAttendanceRecords = (attendanceRows) => {
+    const istTime = getISTTime();
+    const sevenPMIST = istTime.sevenPM;
+    const now = new Date();
+
     return attendanceRows.map(record => {
         let duration = null;
-        if (record.login_time && record.logout_time) {
-            try {
-                const login = new Date(record.login_time);
-                const logout = new Date(record.logout_time);
+        const login = new Date(record.login_time);
 
+        // Use logout_time if available, otherwise if it's past 7pm use 7pm, otherwise use current time
+        let logout = record.logout_time ? new Date(record.logout_time) : (now > sevenPMIST ? sevenPMIST : null);
+
+        if (login && logout) {
+            try {
                 if (!isNaN(login.getTime()) && !isNaN(logout.getTime())) {
-                    const diffMs = logout - login;
+                    // Cap end time at 7 PM IST
+                    const effectiveLogout = logout > sevenPMIST ? sevenPMIST : logout;
+                    const diffMs = effectiveLogout - login;
                     if (diffMs > 0) {
                         const diffHrs = Math.floor(diffMs / 3600000);
                         const diffMins = Math.floor((diffMs % 3600000) / 60000);
@@ -31,8 +39,8 @@ const formatAttendanceRecords = (attendanceRows) => {
             login_time: record.login_time,
             logout_time: record.logout_time,
             date: record.date,
-            duration: duration || (record.login_time && !record.logout_time ? "Running" : "N/A"),
-            session_status: record.session_status || (record.logout_time ? 'Completed' : 'Active'),
+            duration: duration || (record.login_time && !record.logout_time && now < sevenPMIST ? "Running" : (duration || "N/A")),
+            session_status: record.session_status || (record.logout_time ? 'Completed' : (now > sevenPMIST ? 'Frozen' : 'Active')),
             logout_reason: record.logout_reason,
             device_info: record.device_info
         };
@@ -83,6 +91,7 @@ const getWorkDuration = async (req, res) => {
     try {
         const istTime = getISTTime();
         const today = istTime.date;
+        const sevenPMIST = istTime.sevenPM;
 
         // Find all attendance records for today
         const attendanceRows = await Attendance.find({
@@ -95,10 +104,19 @@ const getWorkDuration = async (req, res) => {
         }
 
         const now = new Date();
-        const intervals = attendanceRows.map(record => ({
-            start: new Date(record.login_time).getTime(),
-            end: record.logout_time ? new Date(record.logout_time).getTime() : now.getTime()
-        })).filter(interval => !isNaN(interval.start) && !isNaN(interval.end));
+        const effectiveNow = now > sevenPMIST ? sevenPMIST : now;
+
+        const intervals = attendanceRows.map(record => {
+            const start = new Date(record.login_time).getTime();
+            let end = record.logout_time ? new Date(record.logout_time).getTime() : effectiveNow.getTime();
+
+            // Cap start time if it was somehow after 7 PM (shouldn't happen but for safety)
+            const effectiveStart = Math.min(start, sevenPMIST.getTime());
+            // Cap end time at 7 PM IST
+            const effectiveEnd = Math.min(end, sevenPMIST.getTime());
+
+            return { start: effectiveStart, end: effectiveEnd };
+        }).filter(interval => !isNaN(interval.start) && !isNaN(interval.end));
 
         if (intervals.length === 0) {
             return res.json({ totalMilliseconds: 0 });
