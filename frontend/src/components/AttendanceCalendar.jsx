@@ -126,6 +126,8 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
                                 const isTodayDay = isSameDay(day, new Date()); // Renamed to avoid conflict with isToday from date-fns
                                 const isSelected = isSameDay(day, selectedDate);
 
+                                const isHalfDay = totalMs > 0 && totalMs < 5 * 3600000;
+
                                 return (
                                     <div className="w-full h-full flex flex-col items-center justify-center gap-1">
                                         <span className={`text-sm font-medium ${isSelected ? 'text-white' :
@@ -150,10 +152,17 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
                                         </div>
 
                                         {durationString && (
-                                            <span className={`text-[9px] font-bold ${isSelected ? 'text-indigo-200' : 'text-gray-400'
-                                                }`}>
-                                                {durationString}
-                                            </span>
+                                            <div className="flex flex-col items-center leading-none">
+                                                <span className={`text-[9px] font-bold ${isSelected ? 'text-indigo-200' : 'text-gray-400'
+                                                    }`}>
+                                                    {durationString}
+                                                </span>
+                                                {isHalfDay && (
+                                                    <span className={`text-[7px] font-black uppercase tracking-tighter ${isSelected ? 'text-white' : 'text-amber-600'}`}>
+                                                        Half Day
+                                                    </span>
+                                                )}
+                                            </div>
                                         )}
                                     </div>
                                 );
@@ -224,9 +233,17 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
                                         merged.push(current);
 
                                         let totalMs = merged.reduce((acc, i) => acc + (i.end - i.start), 0);
+                                        const isHalfDay = totalMs > 0 && totalMs < 5 * 3600000;
                                         const h = Math.floor(totalMs / 3600000);
                                         const m = Math.floor((totalMs % 3600000) / 60000);
-                                        return `${h}h ${m}m`;
+                                        return (
+                                            <div className="flex flex-col items-center">
+                                                <span className="text-sm font-black font-mono leading-tight">{h}h {m}m</span>
+                                                {isHalfDay && (
+                                                    <span className="text-[7px] font-black uppercase tracking-widest bg-amber-400 text-amber-900 px-1 rounded mt-0.5">Half Day</span>
+                                                )}
+                                            </div>
+                                        );
                                     })()}
                                 </span>
                             </div>
@@ -248,8 +265,8 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
                                             <span className="text-gray-500 font-medium">Logout</span>
                                             <div className="text-right">
                                                 <span className={`font-bold ${record.session_status === 'Active' ? 'text-green-600' :
-                                                        record.session_status === 'Forced Logout' ? 'text-red-500' :
-                                                            'text-purple-600'
+                                                    record.session_status === 'Forced Logout' ? 'text-red-500' :
+                                                        'text-purple-600'
                                                     }`}>
                                                     {record.logout_time ? format(new Date(record.logout_time), 'hh:mm a') : 'Active Session'}
                                                 </span>

@@ -13,8 +13,12 @@ const ProtectedRoute = ({ allowedRoles }) => {
         return <Navigate to="/login" replace />;
     }
 
-    if (allowedRoles && !allowedRoles.includes(user.role)) {
-        return <Navigate to="/" replace />;
+    if (user.isRestricted) {
+        // Restricted users can only access /restricted-access and /leaves
+        const currentPath = window.location.pathname;
+        if (currentPath !== '/restricted-access' && currentPath !== '/leaves') {
+            return <Navigate to="/restricted-access" replace />;
+        }
     }
 
     return <Outlet />;

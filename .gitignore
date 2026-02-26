@@ -7,3 +7,7 @@ build/
 backend/node_modules/
 frontend/node_modules/
 frontend/dist/
+frontend/dist-windows/
+frontend/electron-build/
+dist-windows/
+electron/

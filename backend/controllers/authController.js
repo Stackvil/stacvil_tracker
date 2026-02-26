@@ -2,7 +2,7 @@ const Employee = require('../models/Employee');
 const Attendance = require('../models/Attendance');
 const LoginRequest = require('../models/LoginRequest');
 const jwt = require('jsonwebtoken');
-const { getISTTime } = require('./utilsController');
+const utilsController = require('./utilsController');
 const crypto = require('crypto');
 const Session = require('../models/Session');
 
@@ -68,8 +68,9 @@ const loginEmployee = async (req, res) => {
         }
 
         // OFFICE HOURS CHECK (Employee Only)
-        const istTimeNow = getISTTime();
+        const istTimeNow = utilsController.getISTTime();
         const currentHourIST = parseInt(istTimeNow.datetime.split('T')[1].split(':')[0]);
+        let isRestricted = false;
 
         if (employee.role === 'employee' && currentHourIST >= 19) {
             // Check for valid approval
@@ -81,17 +82,8 @@ const loginEmployee = async (req, res) => {
             });
 
             if (!approval) {
-                // Check if they have a pending request
-                const pendingRequest = await LoginRequest.findOne({
-                    emp_no: employee.emp_no,
-                    status: 'Pending'
-                });
-
-                return res.status(403).json({
-                    message: 'Login is restricted after office hours. Please request admin approval.',
-                    hasPendingRequest: !!pendingRequest,
-                    restricted: true
-                });
+                // Instead of blocking, allow restricted login
+                isRestricted = true;
             }
         }
 
@@ -100,10 +92,10 @@ const loginEmployee = async (req, res) => {
         }
 
         // GENERATE SESSION TOKEN
-        const session_token = crypto.randomBytes(32).toString('hex');
+        const session_token = !isRestricted ? crypto.randomBytes(32).toString('hex') : null;
 
-        // SINGLE DEVICE ENFORCEMENT FOR EMPLOYEES
-        if (employee.role === 'employee') {
+        // SINGLE DEVICE ENFORCEMENT FOR EMPLOYEES (Only if not restricted)
+        if (employee.role === 'employee' && !isRestricted) {
             // 1. Mark all previous active sessions as inactive
             await Session.updateMany(
                 { emp_no: employee.emp_no, is_active: true },
@@ -119,70 +111,77 @@ const loginEmployee = async (req, res) => {
             }
         }
 
-        // Create new session
-        await Session.create({
-            emp_no: employee.emp_no,
-            session_token: session_token,
-            device_info: device_info || 'unknown',
-            login_time: new Date(),
-            is_active: true
-        });
+        // Create new session (Only if not restricted)
+        if (!isRestricted) {
+            await Session.create({
+                emp_no: employee.emp_no,
+                session_token: session_token,
+                device_info: device_info || 'unknown',
+                login_time: new Date(),
+                is_active: true
+            });
+        }
 
         const token = jwt.sign(
             {
                 id: employee._id,
                 emp_no: employee.emp_no,
                 role: employee.role,
-                session_token: session_token // Embed session token in JWT
+                session_token: session_token, // Embed session token in JWT
+                isRestricted: isRestricted
             },
             process.env.JWT_SECRET,
             { expiresIn: process.env.JWT_EXPIRE || '24h' }
         );
 
-        const istTime = getISTTime();
+        const istTime = utilsController.getISTTime();
         const today = istTime.date;
         const now = istTime.datetime;
 
-        // CLOSE PREVIOUS ATTENDANCE SESSION IF OPEN
-        try {
-            await Attendance.updateMany(
-                { emp_no: employee.emp_no, logout_time: null },
-                {
-                    $set: {
-                        logout_time: now,
-                        session_status: 'Forced Logout',
-                        logout_reason: 'Logged in from another device'
+        // CLOSE PREVIOUS ATTENDANCE SESSION IF OPEN (Only if not restricted)
+        if (!isRestricted) {
+            try {
+                await Attendance.updateMany(
+                    { emp_no: employee.emp_no, logout_time: null },
+                    {
+                        $set: {
+                            logout_time: now,
+                            session_status: 'Forced Logout',
+                            logout_reason: 'Logged in from another device'
+                        }
                     }
-                }
-            );
-        } catch (prevErr) {
-            console.error('[AUTH] Failed to close previous sessions:', prevErr.message);
-        }
+                );
+            } catch (prevErr) {
+                console.error('[AUTH] Failed to close previous sessions:', prevErr.message);
+            }
 
-        // Record login time (don't block login if this fails)
-        // Create a NEW record for every login to track multiple sessions in a day
-        try {
-            const attendance = new Attendance({
-                emp_no: employee.emp_no,
-                login_time: now,
-                date: today,
-                session_status: 'Active',
-                device_info: device_info || 'Unknown Device'
-            });
-            await attendance.save();
-        } catch (attErr) {
-            console.error('[AUTH] Attendance log failed:', attErr.message);
+            // Record login time (don't block login if this fails)
+            // Create a NEW record for every login to track multiple sessions in a day
+            try {
+                const attendance = new Attendance({
+                    emp_no: employee.emp_no,
+                    login_time: now,
+                    date: today,
+                    session_status: 'Active',
+                    device_info: device_info || 'Unknown Device'
+                });
+                await attendance.save();
+            } catch (attErr) {
+                console.error('[AUTH] Attendance log failed:', attErr.message);
+            }
         }
 
         res.json({
             token,
             session_token, // Send explicitly if needed by frontend outside JWT
+            isRestricted,
             user: {
                 id: employee._id,
                 emp_no: employee.emp_no,
                 name: employee.name,
                 role: employee.role,
-                login_time: now
+                login_time: now,
+                isRestricted
             }
         });
     } catch (error) {

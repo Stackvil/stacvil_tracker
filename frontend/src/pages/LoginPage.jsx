@@ -56,6 +56,8 @@ const LoginPage = () => {
         if (result.success) {
             if (result.role === 'admin') {
                 navigate('/admin');
+            } else if (result.isRestricted) {
+                navigate('/restricted-access');
             } else {
                 navigate('/dashboard');
             }

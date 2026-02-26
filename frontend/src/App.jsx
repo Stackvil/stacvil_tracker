@@ -9,6 +9,8 @@ import EmployeeManagement from './pages/EmployeeManagement';
 import Reports from './pages/Reports';
 import LeaveRequest from './pages/LeaveRequest';
 import LeaveManagement from './pages/LeaveManagement';
+import RestrictedAccess from './pages/RestrictedAccess';
+import POS from './pages/POS';
 
 function App() {
   return (
@@ -19,6 +21,8 @@ function App() {
 
           {/* Employee Routes */}
           <Route element={<ProtectedRoute allowedRoles={['employee']} />}>
+            <Route path="/restricted-access" element={<RestrictedAccess />} />
+            <Route path="/pos" element={<POS />} />
             <Route element={<DashboardLayout />}>
               <Route path="/dashboard" element={<EmployeeDashboard />} />
               <Route path="/leaves" element={<LeaveRequest />} />

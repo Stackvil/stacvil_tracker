@@ -86,12 +86,18 @@ const getDailyReports = async (req, res) => {
             });
 
             let working_hours = 'N/A';
+            let is_half_day = false;
             if (empAttendances.length > 0) {
                 const hasActive = empAttendances.some(a => !a.logout_time);
                 if (totalMs > 0 || !hasActive) {
                     const hrs = Math.floor(totalMs / 3600000);
                     const mins = Math.floor((totalMs % 3600000) / 60000);
+
+                    // Half-day logic: less than 5 hours (5 * 3600000 ms)
+                    is_half_day = totalMs > 0 && totalMs < 5 * 3600000;
+
                     working_hours = `${hrs}:${mins.toString().padStart(2, '0')}:00`;
+                    if (is_half_day) working_hours += ' (Half Day)';
                     if (hasActive) working_hours += ' (Active)';
                 } else {
                     working_hours = 'Running';
@@ -113,7 +119,8 @@ const getDailyReports = async (req, res) => {
                 due_date: t.due_date || 'N/A',
                 completed_date: t.completed_date || 'N/A',
                 is_self_assigned: t.is_self_assigned || false,
-                working_hours
+                working_hours,
+                is_half_day // Added half-day flag
             };
         });
 

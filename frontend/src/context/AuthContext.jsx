@@ -44,13 +44,14 @@ export const AuthProvider = ({ children }) => {
     const login = async (emp_no, password) => {
         try {
             const response = await api.post('/auth/login', { emp_no, password });
-            const { token, user: loggedInUser } = response.data;
+            const { token, user: loggedInUser, isRestricted } = response.data;
+            const userData = { ...loggedInUser, isRestricted };
 
             localStorage.setItem('token', token);
-            localStorage.setItem('user', JSON.stringify(loggedInUser));
-            setUser(loggedInUser);
+            localStorage.setItem('user', JSON.stringify(userData));
+            setUser(userData);
 
-            return { success: true, role: loggedInUser.role };
+            return { success: true, role: loggedInUser.role, isRestricted };
         } catch (error) {
             return {
                 success: false,

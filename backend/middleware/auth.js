@@ -9,8 +9,21 @@ const protect = async (req, res, next) => {
             token = req.headers.authorization.split(' ')[1];
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            // Check session validity for employees
-            if (decoded.role === 'employee' && decoded.session_token) {
+            // Restricted User Check
+            if (decoded.isRestricted) {
+                const allowedRoutes = ['/api/leaves/apply', '/api/leaves/my-leaves', '/api/auth/logout'];
+                const currentPath = req.originalUrl.split('?')[0]; // Ignore query params
+
+                if (!allowedRoutes.includes(currentPath)) {
+                    return res.status(403).json({
+                        message: 'Access restricted after office hours. You can only submit leave requests.',
+                        isRestricted: true
+                    });
+                }
+            }
+
+            // Check session validity for employees (Skip for restricted users since they have no session)
+            if (decoded.role === 'employee' && decoded.session_token && !decoded.isRestricted) {
                 const session = await Session.findOne({
                     session_token: decoded.session_token,
                     is_active: true

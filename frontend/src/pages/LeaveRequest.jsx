@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { format, parseISO, isAfter, isSameDay } from 'date-fns';
 
 const LeaveRequest = () => {
-    const { user } = useContext(AuthContext);
+    const { user, logout } = useContext(AuthContext);
     const [leaves, setLeaves] = useState([]);
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
@@ -72,8 +72,15 @@ const LeaveRequest = () => {
             await api.post('/leaves/apply', formData);
             setSuccess('Leave application submitted successfully!');
             setFormData({ type: 'single', start_date: '', end_date: '', reason: '' });
-            fetchMyLeaves();
-            setTimeout(() => setSuccess(''), 5000);
+
+            if (user.isRestricted) {
+                setTimeout(() => {
+                    logout();
+                }, 2000);
+            } else {
+                fetchMyLeaves();
+                setTimeout(() => setSuccess(''), 5000);
+            }
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to submit leave application');
         } finally {
@@ -203,8 +210,8 @@ const LeaveRequest = () => {
                                         <div className="flex justify-between items-start mb-2">
                                             <div>
                                                 <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${leave.status === 'approved' ? 'bg-green-100 text-green-700' :
-                                                        leave.status === 'declined' ? 'bg-red-100 text-red-700' :
-                                                            'bg-amber-100 text-amber-700'
+                                                    leave.status === 'declined' ? 'bg-red-100 text-red-700' :
+                                                        'bg-amber-100 text-amber-700'
                                                     }`}>
                                                     {leave.status}
                                                 </span>
