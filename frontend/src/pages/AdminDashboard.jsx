@@ -32,6 +32,8 @@ const AdminDashboard = () => {
     const [todayReport, setTodayReport] = useState([]);
     const [leavesToday, setLeavesToday] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [selectedCategory, setSelectedCategory] = useState(null);
+    const [isModalOpen, setIsModalOpen] = useState(false);
 
     const today = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
@@ -86,9 +88,43 @@ const AdminDashboard = () => {
     };
 
     const presentToday = todayReport.filter(r => r.login_time !== 'N/A').length;
-    const absentToday = todayReport.filter(r => r.login_time === 'N/A').length;
-    const activeNow = todayReport.filter(r => r.login_time !== 'N/A' && r.logout_time === 'N/A').length;
+    const leaveEmpNos = leavesToday.map(l => l.emp_no);
+    const absentEmployees = todayReport.filter(r => r.login_time === 'N/A' && !leaveEmpNos.includes(r.emp_no));
+    const absentTodayCount = absentEmployees.length;
+    const activeNowList = todayReport.filter(r => r.login_time !== 'N/A' && r.logout_time === 'N/A');
+    const activeNow = activeNowList.length;
     const completedToday = todayReport.filter(r => r.status === 'completed').length;
+
+    const handlePillClick = (category) => {
+        let list = [];
+        let title = "";
+        switch (category) {
+            case 'Present':
+                list = todayReport.filter(r => r.login_time !== 'N/A');
+                title = "Present Employees";
+                break;
+            case 'On Leave':
+                list = todayReport.filter(r => leaveEmpNos.includes(r.emp_no));
+                title = "Employees On Leave";
+                break;
+            case 'Absent':
+                list = absentEmployees;
+                title = "Absent Employees";
+                break;
+            case 'Active Now':
+                list = activeNowList;
+                title = "Active Now";
+                break;
+            case 'Tasks Done':
+                list = todayReport.filter(r => r.status === 'completed');
+                title = "Completed Tasks Today";
+                break;
+            default:
+                break;
+        }
+        setSelectedCategory({ title, list });
+        setIsModalOpen(true);
+    };
 
     return (
         <div className="space-y-6">
@@ -121,11 +157,11 @@ const AdminDashboard = () => {
 
                 {/* Mini summary pills */}
                 <div className="flex flex-wrap gap-3 mb-5">
-                    <Pill color="bg-green-50 text-green-700 border-green-200" label={`${presentToday} Present`} />
-                    <Pill color="bg-amber-50 text-amber-700 border-amber-200" label={`${leavesToday.length} On Leave`} />
-                    <Pill color="bg-red-50 text-red-600 border-red-200" label={`${absentToday - leavesToday.length} Absent`} />
-                    <Pill color="bg-blue-50 text-blue-700 border-blue-200" label={`${activeNow} Active Now`} />
-                    <Pill color="bg-indigo-50 text-indigo-700 border-indigo-200" label={`${completedToday} Tasks Done`} />
+                    <Pill color="bg-green-50 text-green-700 border-green-200 cursor-pointer hover:bg-green-100" label={`${presentToday} Present`} onClick={() => handlePillClick('Present')} />
+                    <Pill color="bg-amber-50 text-amber-700 border-amber-200 cursor-pointer hover:bg-amber-100" label={`${leavesToday.length} On Leave`} onClick={() => handlePillClick('On Leave')} />
+                    <Pill color="bg-red-50 text-red-600 border-red-200 cursor-pointer hover:bg-red-100" label={`${absentTodayCount} Absent`} onClick={() => handlePillClick('Absent')} />
+                    <Pill color="bg-blue-50 text-blue-700 border-blue-200 cursor-pointer hover:bg-blue-100" label={`${activeNow} Active Now`} onClick={() => handlePillClick('Active Now')} />
+                    <Pill color="bg-indigo-50 text-indigo-700 border-indigo-200 cursor-pointer hover:bg-indigo-100" label={`${completedToday} Tasks Done`} onClick={() => handlePillClick('Tasks Done')} />
                 </div>
 
                 {todayReport.length === 0 ? (
@@ -312,6 +348,67 @@ const AdminDashboard = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Employee List Modal */}
+            {isModalOpen && selectedCategory && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm transition-all animate-in fade-in active:scale-100">
+                    <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden animate-in zoom-in-95 duration-200">
+                        <div className="p-6 border-b border-gray-100 flex items-center justify-between">
+                            <h3 className="text-xl font-bold text-gray-800">{selectedCategory.title}</h3>
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="p-2 hover:bg-gray-100 rounded-full transition-colors text-gray-400 hover:text-gray-600"
+                            >
+                                <XCircle className="w-6 h-6" />
+                            </button>
+                        </div>
+                        <div className="max-h-[60vh] overflow-y-auto p-4 custom-scrollbar">
+                            {selectedCategory.list.length === 0 ? (
+                                <div className="text-center py-10 text-gray-400 flex flex-col items-center gap-2">
+                                    <AlertCircle className="w-10 h-10 opacity-20" />
+                                    <p>No employees found in this category</p>
+                                </div>
+                            ) : (
+                                <div className="space-y-3">
+                                    {selectedCategory.list.map((emp, idx) => (
+                                        <div key={idx} className="flex items-center gap-4 p-3 rounded-xl hover:bg-gray-50 transition-all border border-transparent hover:border-gray-100">
+                                            {emp.profile_picture ? (
+                                                <img src={emp.profile_picture} alt={emp.name} className="w-10 h-10 rounded-lg object-cover shadow-sm" />
+                                            ) : (
+                                                <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-700 font-bold text-sm">
+                                                    {(emp.full_name || emp.name)?.charAt(0)}
+                                                </div>
+                                            )}
+                                            <div className="flex-1 min-w-0">
+                                                <p className="font-bold text-gray-800 truncate text-sm">{emp.full_name || emp.name}</p>
+                                                <p className="text-xs text-gray-500 font-medium">#{emp.emp_no}</p>
+                                            </div>
+                                            <div className="text-right shrink-0">
+                                                {emp.login_time !== 'N/A' ? (
+                                                    <div className="space-y-0.5">
+                                                        <p className="text-[10px] font-bold text-gray-400 uppercase leading-none">Logged In</p>
+                                                        <p className="text-xs font-bold text-indigo-600">{emp.login_time}</p>
+                                                    </div>
+                                                ) : (
+                                                    <span className="text-xs px-2 py-0.5 rounded-full bg-red-50 text-red-600 font-bold uppercase">Absent</span>
+                                                )}
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                        </div>
+                        <div className="p-4 bg-gray-50 border-t border-gray-100 flex justify-end">
+                            <button
+                                onClick={() => setIsModalOpen(false)}
+                                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-xl font-bold text-sm transition-all shadow-md shadow-indigo-200 active:scale-95"
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
@@ -328,8 +425,13 @@ const StatCard = ({ title, value, icon: Icon, color }) => (
     </div>
 );
 
-const Pill = ({ color, label }) => (
-    <span className={`text-xs font-semibold px-3 py-1 rounded-full border ${color}`}>{label}</span>
+const Pill = ({ color, label, onClick }) => (
+    <button
+        onClick={onClick}
+        className={`text-xs font-semibold px-3 py-1 rounded-full border transition-all active:scale-95 ${color}`}
+    >
+        {label}
+    </button>
 );
 
 export default AdminDashboard;
