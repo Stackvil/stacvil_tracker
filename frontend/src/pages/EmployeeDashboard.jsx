@@ -461,6 +461,7 @@ const TaskSection = ({ title, tasks, icon, emptyMessage, onAccept, onDecline, on
 
 // Task Card Component
 const TaskCard = ({ task, onAccept, onDecline, onUpdateProgress }) => {
+    const { user } = useContext(AuthContext);
     const [localPct, setLocalPct] = useState(task.completion_percentage);
     const [isDragging, setIsDragging] = useState(false);
 

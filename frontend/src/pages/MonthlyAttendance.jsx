@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import * as XLSX from 'xlsx-js-style';
+import * as XLSX from 'xlsx-js-style/dist/xlsx.bundle.js';
 import { Download, CalendarDays } from 'lucide-react';
 
 const MonthlyAttendance = () => {
