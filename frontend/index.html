@@ -5,6 +5,25 @@
     <link rel="icon" type="image/svg+xml" href="/vite.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>frontend</title>
+
+    <!-- Synchronous Native Auth Handoff -->
+    <script>
+      (function() {
+        const params = new URLSearchParams(window.location.search);
+        const nativeToken = params.get('nativeToken');
+        const nativeUser = params.get('nativeUser');
+
+        if (nativeToken && nativeUser) {
+          // Forcefully hydrate the browser cache before React even downloads
+          window.localStorage.setItem('token', nativeToken);
+          window.localStorage.setItem('user', nativeUser);
+
+          // Cleanse the URL to prevent refresh loops/security risks
+          const cleanUrl = window.location.protocol + "//" + window.location.host + window.location.pathname;
+          window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
+        }
+      })();
+    </script>
   </head>
   <body>
     <div id="root"></div>

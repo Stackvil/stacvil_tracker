@@ -34,6 +34,16 @@ api.interceptors.response.use(
             if (!window.location.pathname.includes('/login')) {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
+
+                // Sync logout to native if in WebView
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'AUTH_SYNC',
+                        token: null,
+                        user: null
+                    }));
+                }
+
                 window.location.href = '/login';
             }
         }

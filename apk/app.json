@@ -1,10 +1,10 @@
 {
   "expo": {
-    "name": "apk",
-    "slug": "apk",
+    "name": "stackvil",
+    "slug": "stackvil",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/images/icon.png",
+    "icon": "./assets/images/Black Simple Eagle Logo (1).png",
     "scheme": "apk",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
@@ -12,9 +12,10 @@
       "supportsTablet": true
     },
     "android": {
+      "package": "com.stackvil.tracker",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/images/android-icon-foreground.png",
+        "foregroundImage": "./assets/images/Black Simple Eagle Logo (1).png",
         "backgroundImage": "./assets/images/android-icon-background.png",
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },

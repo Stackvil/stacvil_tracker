@@ -14,7 +14,7 @@ const LoginPage = () => {
     const [showRequestModal, setShowRequestModal] = useState(false);
     const [requestReason, setRequestReason] = useState('');
     const [requestStatus, setRequestStatus] = useState(null);
-    const { login } = useContext(AuthContext);
+    const { login, user, loading } = useContext(AuthContext);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
 
@@ -23,7 +23,18 @@ const LoginPage = () => {
         if (reason === 'concurrent_login') {
             setError('Your account has been logged in from another device.');
         }
-    }, [searchParams]);
+
+        // AUTO-REDIRECT IF ALREADY LOGGED IN (Persistent Session)
+        if (!loading && user) {
+            if (user.role === 'admin') {
+                navigate('/admin', { replace: true });
+            } else if (user.isRestricted) {
+                navigate('/restricted-access', { replace: true });
+            } else {
+                navigate('/dashboard', { replace: true });
+            }
+        }
+    }, [searchParams, user, loading, navigate]);
 
     // Handle Socket for Login Request
     useEffect(() => {

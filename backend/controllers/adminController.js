@@ -583,6 +583,196 @@ const forceLogoutEmployee = async (req, res) => {
     }
 };
 
+// @desc    Get monthly attendance reports
+// @route   GET /api/admin/reports/monthly
+const getMonthlyAttendance = async (req, res) => {
+    try {
+        const { date } = req.query; // Expecting YYYY-MM format
+        if (!date) {
+            return res.status(400).json({ message: 'Month and year are required (YYYY-MM)' });
+        }
+
+        const [yearStr, monthStr] = date.split('-');
+        const year = parseInt(yearStr);
+        const month = parseInt(monthStr) - 1; // 0-indexed month for Date
+
+        // Find all active employees
+        const employees = await Employee.find({ role: 'employee' }).sort({ emp_no: 1 });
+
+        // Find all attendances for the given month
+        // We can match date string starting with 'YYYY-MM' since date is stored as YYYY-MM-DD
+        const monthPrefix = `${yearStr}-${monthStr}`;
+        const attendances = await Attendance.find({ date: { $regex: `^${monthPrefix}` } });
+
+        // Number of days in the month
+        const numDays = new Date(year, month + 1, 0).getDate();
+
+        // Today's date to avoid marking future dates as Absent
+        const istTime = getISTTime();
+        const todayDateStr = istTime.date; // YYYY-MM-DD
+        const currentYearMonth = todayDateStr.substring(0, 7);
+        const currentDay = parseInt(todayDateStr.substring(8, 10));
+
+        const isCurrentMonth = (date === currentYearMonth);
+        const isFutureMonth = (date > currentYearMonth);
+
+        const reports = employees.map(e => {
+            const empAttendances = attendances.filter(a => a.emp_no === e.emp_no);
+
+            const attendanceRecord = {};
+            let presentCount = 0;
+            let absentCount = 0;
+            let halfDayCount = 0;
+
+            for (let day = 1; day <= numDays; day++) {
+                const dayStr = day.toString().padStart(2, '0');
+                const currentDateStr = `${monthPrefix}-${dayStr}`;
+
+                // Determine if date is in the future
+                let isFuture = false;
+                if (isFutureMonth) {
+                    isFuture = true;
+                } else if (isCurrentMonth && day > currentDay) {
+                    isFuture = true;
+                }
+
+                if (isFuture) {
+                    attendanceRecord[day] = 'N/A';
+                    continue;
+                }
+
+                // Get all sessions for this day
+                const daySessions = empAttendances.filter(a => a.date === currentDateStr);
+
+                // If there is ANY record for this day with a manual_status, use it immediately
+                const manualRecord = daySessions.find(a => a.manual_status !== null);
+                if (manualRecord) {
+                    attendanceRecord[day] = manualRecord.manual_status;
+
+                    if (manualRecord.manual_status === 'P') presentCount++;
+                    else if (manualRecord.manual_status === 'A') absentCount++;
+                    else if (manualRecord.manual_status === 'H') halfDayCount++;
+
+                    continue; // Skip the time calculation below
+                }
+
+                if (daySessions.length === 0) {
+                    // Check if it's a weekend (Sunday)
+                    // Date.getDay() 0 is Sunday
+                    const dateObj = new Date(year, month, day);
+                    if (dateObj.getDay() === 0) {
+                        attendanceRecord[day] = 'W'; // Weekend
+                    } else {
+                        attendanceRecord[day] = 'A'; // Absent
+                        absentCount++;
+                    }
+                } else {
+                    // Calculate total duration for the day
+                    let totalMs = 0;
+                    daySessions.forEach(session => {
+                        let loginTime = new Date(session.login_time);
+                        // If logout is missing, check if it's today and past 7pm
+                        let logoutTime = null;
+                        if (session.logout_time) {
+                            logoutTime = new Date(session.logout_time);
+                        } else if (currentDateStr === todayDateStr && (new Date() > istTime.sevenPM || istTime.hour >= 19)) {
+                            logoutTime = istTime.sevenPM;
+                        }
+
+                        if (loginTime && logoutTime) {
+                            const effectiveLogout = (logoutTime > istTime.sevenPM && currentDateStr === todayDateStr) ? istTime.sevenPM : logoutTime;
+                            let durationMs = effectiveLogout - loginTime;
+                            if (durationMs > 0) totalMs += durationMs;
+                        }
+                    });
+
+                    // Logic from existing half-day requirement: < 5 hours is Half Day
+                    if (totalMs > 0 && totalMs < 5 * 3600000) {
+                        attendanceRecord[day] = 'H'; // Half Day
+                        halfDayCount++;
+                    } else if (totalMs >= 5 * 3600000 || daySessions.some(s => !s.logout_time)) {
+                        attendanceRecord[day] = 'P'; // Present
+                        presentCount++;
+                    } else {
+                        attendanceRecord[day] = 'A'; // Absent
+                        absentCount++;
+                    }
+                }
+            }
+
+            return {
+                emp_no: e.emp_no,
+                name: e.name,
+                full_name: e.full_name,
+                attendance: attendanceRecord,
+                summary: {
+                    present: presentCount,
+                    absent: absentCount,
+                    halfDay: halfDayCount
+                }
+            };
+        });
+
+        res.json(reports);
+    } catch (error) {
+        console.error('Error fetching monthly attendance:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Update a specific cell for monthly attendance (Google Sheets style)
+// @route   PUT /api/admin/reports/monthly
+const updateMonthlyAttendance = async (req, res) => {
+    try {
+        const { emp_no, date, status } = req.body;
+
+        if (!emp_no || !date || !status) {
+            return res.status(400).json({ message: 'Missing required fields' });
+        }
+
+        // Validate status enum
+        if (!['P', 'A', 'H', 'Holiday', null].includes(status)) {
+            return res.status(400).json({ message: 'Invalid status value' });
+        }
+
+        const employee = await Employee.findOne({ emp_no });
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee not found' });
+        }
+
+        // Find existing record(s) for this employee on this date
+        // Since an employee might have multiple sessions in a day, we update the first one or create a new 'override' record
+        let attendances = await Attendance.find({ emp_no, date }).sort({ created_at: 1 });
+
+        if (attendances.length > 0) {
+            // Update the manual_status of the first record found for that day
+            const recordToUpdate = attendances[0];
+            recordToUpdate.manual_status = status;
+            await recordToUpdate.save();
+        } else {
+            // No attendance record exists for this day yet. Need to create a placeholder record.
+            // Create a record with a dummy login_time (e.g. 00:00:00) so we have a physical row to store manual_status
+            const dummyLoginTime = new Date(`${date}T00:00:00.000Z`);
+
+            const newRecord = new Attendance({
+                emp_no,
+                date,
+                login_time: dummyLoginTime,
+                logout_time: dummyLoginTime, // instantly closed
+                session_status: 'Completed',
+                logout_reason: 'System Override / Empty Day',
+                manual_status: status
+            });
+            await newRecord.save();
+        }
+
+        res.json({ success: true, message: 'Attendance updated successfully' });
+    } catch (error) {
+        console.error('Error updating monthly attendance:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     getEmployees,
     getDailyReports,
@@ -596,6 +786,8 @@ module.exports = {
     getLoginRequests,
     handleLoginRequest,
     forceLogoutAll,
-    forceLogoutEmployee
+    forceLogoutEmployee,
+    getMonthlyAttendance,
+    updateMonthlyAttendance
 };
 

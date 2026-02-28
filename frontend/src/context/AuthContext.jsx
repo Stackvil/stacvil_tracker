@@ -32,6 +32,16 @@ export const AuthProvider = ({ children }) => {
                 localStorage.removeItem('token');
                 localStorage.removeItem('user');
                 setUser(null);
+
+                // Sync logout to native if in WebView
+                if (window.ReactNativeWebView) {
+                    window.ReactNativeWebView.postMessage(JSON.stringify({
+                        type: 'AUTH_SYNC',
+                        token: null,
+                        user: null
+                    }));
+                }
+
                 window.location.href = '/login?reason=concurrent_login';
             });
         }
@@ -39,6 +49,21 @@ export const AuthProvider = ({ children }) => {
         return () => {
             if (newSocket) newSocket.disconnect();
         };
+    }, [user]);
+
+    useEffect(() => {
+        // Sync with Native Storage if in WebView
+        if (window.ReactNativeWebView) {
+            const token = localStorage.getItem('token');
+            const user = localStorage.getItem('user');
+            if (token) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'AUTH_SYNC',
+                    token: token,
+                    user: user ? JSON.parse(user) : null
+                }));
+            }
+        }
     }, [user]);
 
     const login = async (emp_no, password) => {
@@ -84,6 +109,16 @@ export const AuthProvider = ({ children }) => {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             setUser(null);
+
+            // Sync logout to native if in WebView
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({
+                    type: 'AUTH_SYNC',
+                    token: null,
+                    user: null
+                }));
+            }
+
             window.location.href = '/login';
         }
     };

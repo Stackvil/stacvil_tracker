@@ -27,6 +27,11 @@ const attendanceSchema = new mongoose.Schema({
         type: String,
         default: null
     },
+    manual_status: {
+        type: String,
+        enum: ['P', 'A', 'H', 'Holiday', null],
+        default: null
+    },
     device_info: {
         type: String,
         default: null

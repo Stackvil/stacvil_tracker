@@ -13,7 +13,9 @@ const {
     getLoginRequests,
     handleLoginRequest,
     forceLogoutAll,
-    forceLogoutEmployee
+    forceLogoutEmployee,
+    getMonthlyAttendance,
+    updateMonthlyAttendance
 } = require('../controllers/adminController');
 const { protect, admin } = require('../middleware/auth');
 
@@ -21,6 +23,8 @@ router.get('/employees', protect, admin, getEmployees);
 router.post('/employees', protect, admin, createEmployee);
 router.delete('/employees/:emp_no', protect, admin, deleteEmployee);
 router.get('/reports/daily', protect, admin, getDailyReports);
+router.get('/reports/monthly', protect, admin, getMonthlyAttendance);
+router.put('/reports/monthly', protect, admin, updateMonthlyAttendance);
 router.get('/analytics', protect, admin, getAnalytics);
 router.post('/tasks/assign', protect, admin, assignTask);
 router.get('/tasks', protect, admin, getAdminTasks);
