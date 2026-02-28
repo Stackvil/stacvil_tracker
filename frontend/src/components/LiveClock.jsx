@@ -109,15 +109,15 @@ const LiveClock = () => {
     const isEmployee = role === 'employee';
 
     return (
-        <div className="flex gap-4">
+        <div className="flex gap-1.5 sm:gap-4 flex-shrink min-w-0">
             {/* Live Clock */}
-            <div className="flex items-center gap-3 px-4 py-2 bg-indigo-50 border border-indigo-100 rounded-xl shadow-sm">
-                <div className="flex items-center justify-center w-8 h-8 bg-indigo-600 rounded-lg shadow-inner">
+            <div className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-2 bg-indigo-50 border border-indigo-100 rounded-xl shadow-sm min-w-0">
+                <div className="hidden sm:flex items-center justify-center w-8 h-8 bg-indigo-600 rounded-lg shadow-inner flex-shrink-0">
                     <Clock className="w-4 h-4 text-white animate-pulse" />
                 </div>
-                <div className="flex flex-col">
-                    <span className="text-[10px] font-bold text-indigo-400 uppercase tracking-widest leading-none mb-1">IST Time</span>
-                    <span className="text-lg font-black text-indigo-900 font-mono leading-none tracking-tighter">
+                <div className="flex flex-col min-w-0">
+                    <span className="text-[8px] sm:text-[10px] font-bold text-indigo-400 uppercase tracking-widest leading-none mb-0.5 sm:mb-1 truncate">IST Time</span>
+                    <span className="text-sm sm:text-lg font-black text-indigo-900 font-mono leading-none tracking-tighter truncate">
                         {currentTime}
                     </span>
                 </div>
@@ -125,10 +125,10 @@ const LiveClock = () => {
 
             {/* Work Duration - Only show for employees */}
             {isEmployee && (
-                <div className="flex items-center gap-3 px-4 py-2 bg-green-50 border border-green-200 rounded-xl shadow-md shadow-green-100/50">
-                    <div className="flex flex-col">
-                        <span className="text-[10px] font-bold text-green-600 uppercase tracking-widest leading-none mb-1">Work Duration</span>
-                        <span className="text-lg font-black text-green-900 font-mono leading-none tracking-tighter">
+                <div className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-2 bg-green-50 border border-green-200 rounded-xl shadow-md shadow-green-100/50 min-w-0">
+                    <div className="flex flex-col min-w-0">
+                        <span className="text-[8px] sm:text-[10px] font-bold text-green-600 uppercase tracking-widest leading-none mb-0.5 sm:mb-1 truncate">Work Duration</span>
+                        <span className="text-sm sm:text-lg font-black text-green-900 font-mono leading-none tracking-tighter truncate">
                             {formatDuration(workDuration)}
                         </span>
                     </div>

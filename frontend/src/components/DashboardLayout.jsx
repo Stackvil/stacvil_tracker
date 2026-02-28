@@ -227,20 +227,20 @@ const DashboardLayout = () => {
             {/* Main Content */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden">
                 {/* Header */}
-                <header className="h-16 md:h-20 bg-white border-b border-gray-200 flex items-center justify-between px-4 md:px-6 sticky top-0 z-10 shadow-sm">
-                    <div className="flex items-center md:hidden gap-2">
-                        <img src="/logo.jpg" alt="StackVil" className="h-8 w-8 rounded-lg object-cover shadow-sm" />
-                        <span className="text-base font-bold text-gray-800">StackVil</span>
+                <header className="h-16 md:h-20 bg-white border-b border-gray-200 flex items-center justify-between px-2 sm:px-4 md:px-6 sticky top-0 z-10 shadow-sm gap-2">
+                    <div className="flex items-center md:hidden gap-1.5 flex-shrink-0">
+                        <img src="/logo.jpg" alt="StackVil" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg object-cover shadow-sm" />
+                        <span className="text-sm font-bold text-gray-800 hidden sm:block">StackVil</span>
                     </div>
-                    <div className="hidden md:block">
+                    <div className="hidden md:block flex-shrink-0">
                         <h2 className="text-xl font-bold text-gray-800">
                             {navItems.find(item => item.path === location.pathname)?.name || 'Dashboard'}
                         </h2>
                     </div>
 
-                    <div className="flex items-center gap-3 md:gap-6">
+                    <div className="flex items-center justify-end gap-1.5 sm:gap-3 md:gap-6 flex-1 min-w-0">
                         <LiveClock />
-                        <div className="flex items-center gap-2 md:gap-4">
+                        <div className="flex items-center gap-1.5 sm:gap-2 md:gap-4 flex-shrink-0">
                             <button className="p-2 text-gray-400 hover:bg-gray-100 rounded-full transition-colors relative">
                                 <Bell className="w-5 h-5 md:w-6 md:h-6" />
                                 <span className="absolute top-2 right-2 w-1.5 h-1.5 bg-red-500 rounded-full border-2 border-white"></span>
