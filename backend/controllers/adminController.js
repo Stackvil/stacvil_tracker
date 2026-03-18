@@ -58,7 +58,11 @@ const getEmployees = async (req, res) => {
         const activeAttendance = isPastSevenPM
             ? []
             : await Attendance.find({ date: today, logout_time: null });
-        const activeEmpNos = new Set(activeAttendance.map(a => a.emp_no));
+        
+        const activeSessionMap = activeAttendance.reduce((acc, a) => {
+            acc[a.emp_no] = { is_on_wifi: a.is_on_wifi };
+            return acc;
+        }, {});
 
         const result = employees.map(e => ({
             id: e._id,
@@ -68,7 +72,12 @@ const getEmployees = async (req, res) => {
             profile_picture: e.profile_picture,
             email: e.email,
             role: e.role,
-            status: activeEmpNos.has(e.emp_no) ? 'active' : 'inactive'
+            status: activeSessionMap[e.emp_no] ? 'active' : 'inactive',
+            presence_status: e.presence_status || 'offline',
+            is_on_wifi: activeSessionMap[e.emp_no]?.is_on_wifi || false,
+            is_face_enabled: e.is_face_enabled,
+            has_face_descriptor: e.face_descriptor && e.face_descriptor.length > 0,
+            is_wifi_login_enabled: e.is_wifi_login_enabled
         }));
 
         res.json(result);

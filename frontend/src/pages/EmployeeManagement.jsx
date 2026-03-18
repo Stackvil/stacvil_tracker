@@ -276,9 +276,20 @@ const EmployeeManagement = () => {
                                         {emp.name.charAt(0)}
                                     </div>
                                 )}
-                                <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase ${emp.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                    {emp.status}
-                                </span>
+                                <div className="flex flex-col items-end gap-1.5">
+                                    <span className={`px-2 py-1 rounded-lg text-[10px] font-bold uppercase flex items-center gap-1.5 ${emp.status === 'active' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
+                                        {emp.status === 'active' && emp.presence_status === 'online' && (
+                                            <span className="w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                                        )}
+                                        {emp.status}
+                                    </span>
+                                    {emp.status === 'active' && (
+                                        <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded flex items-center gap-1 ${emp.is_on_wifi ? 'bg-blue-100 text-blue-700' : 'bg-orange-100 text-orange-700'}`}>
+                                            <Wifi className="w-2.5 h-2.5" />
+                                            {emp.is_on_wifi ? 'ON WIFI' : 'NO WIFI PAUSED'}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <h3 className="text-lg font-bold text-gray-800 group-hover:text-indigo-600 transition-colors uppercase truncate">{emp.full_name || emp.name}</h3>
                             <p className="text-sm text-gray-500 font-medium mt-0.5">@{emp.name} · ID: {emp.emp_no}</p>
@@ -304,7 +315,8 @@ const EmployeeManagement = () => {
                                             email: emp.email,
                                             password: '',
                                             role: emp.role,
-                                            face_descriptor: emp.face_descriptor || [],
+                                            face_descriptor: [],
+                                            has_face_descriptor: emp.has_face_descriptor,
                                             is_face_enabled: emp.is_face_enabled || false,
                                             is_wifi_login_enabled: emp.is_wifi_login_enabled !== undefined ? emp.is_wifi_login_enabled : true
                                         });
@@ -780,40 +792,72 @@ const EmployeeManagement = () => {
                                 </div>
 
                                 <div>
-                                    <label className="block text-sm font-semibold text-gray-700 mb-3">Face Detection Update (Optional)</label>
-                                    {editForm.is_face_enabled ? (
-                                        <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center justify-between">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
-                                                    <CheckCircle2 className="w-6 h-6" />
+                                    <label className="block text-sm font-semibold text-gray-700 mb-3">Face Detection Settings</label>
+
+                                    {editForm.has_face_descriptor ? (
+                                        <div className="bg-green-50 border border-green-200 rounded-2xl p-4 flex flex-col gap-3">
+                                            <div className="flex items-center justify-between">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
+                                                        <CheckCircle2 className="w-6 h-6" />
+                                                    </div>
+                                                    <div>
+                                                        <p className="text-sm font-bold text-green-800">Face Data Enrolled</p>
+                                                        <p className="text-[10px] text-green-600 font-medium">Ready for Biometric Login</p>
+                                                    </div>
                                                 </div>
-                                                <div>
-                                                    <p className="text-sm font-bold text-green-800">Face Enrolled</p>
-                                                    <p className="text-[10px] text-green-600 font-medium">Biometric login active</p>
+                                                <div className="flex items-center gap-2">
+                                                    {editForm.is_face_enabled ? (
+                                                        <span className="text-xs bg-indigo-100 text-indigo-700 font-bold px-2 py-1 rounded">Login Enabled</span>
+                                                    ) : (
+                                                        <span className="text-xs bg-gray-200 text-gray-500 font-bold px-2 py-1 rounded">Login Disabled</span>
+                                                    )}
                                                 </div>
                                             </div>
-                                            <div className="flex gap-2">
+
+                                            <div className="flex gap-2 pt-2 border-t border-green-200/50 mt-1">
                                                 <button
                                                     type="button"
-                                                    onClick={() => setEditForm({ ...editForm, is_face_enabled: false })}
-                                                    className="text-xs font-bold text-orange-600 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-all"
+                                                    onClick={() => setEditForm({ ...editForm, is_face_enabled: !editForm.is_face_enabled })}
+                                                    className="flex-1 text-xs font-bold bg-white text-indigo-600 hover:bg-indigo-50 border border-indigo-100 px-3 py-2 rounded-lg transition-all"
                                                 >
-                                                    Disable
+                                                    {editForm.is_face_enabled ? 'Disable Biometric Login' : 'Enable Biometric Login'}
                                                 </button>
                                                 <button
                                                     type="button"
-                                                    onClick={() => setEditForm({ ...editForm, face_descriptor: [], is_face_enabled: false })}
-                                                    className="text-xs font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all"
+                                                    onClick={() => {
+                                                        if (window.confirm('Are you sure you want to delete this employee\'s face data? They will need to re-enroll.')) {
+                                                            setEditForm({ ...editForm, face_descriptor: [], has_face_descriptor: false, is_face_enabled: false });
+                                                        }
+                                                    }}
+                                                    className="text-xs font-bold text-red-600 bg-red-100 border border-red-200 hover:bg-red-200 px-3 py-2 rounded-lg transition-all"
                                                 >
-                                                    Clear Data
+                                                    Delete Face Data
                                                 </button>
                                             </div>
                                         </div>
                                     ) : (
-                                        <FaceCapture
-                                            label="Enroll Face for Secure Login"
-                                            onCapture={(descriptor) => setEditForm({ ...editForm, face_descriptor: descriptor, is_face_enabled: true })}
-                                        />
+                                        <div className="space-y-4">
+                                            <div className="bg-orange-50 border border-orange-100 rounded-2xl p-4 flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-orange-100 rounded-xl flex items-center justify-center text-orange-600">
+                                                    <AlertCircle className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-orange-800">No Face Data Enrolled</p>
+                                                    <p className="text-[10px] text-orange-600 font-medium">Capture face below to enable biometric login</p>
+                                                </div>
+                                            </div>
+                                            
+                                            <FaceCapture
+                                                label="Capture New Face Data"
+                                                onCapture={(descriptor) => setEditForm({ 
+                                                    ...editForm, 
+                                                    face_descriptor: descriptor, 
+                                                    has_face_descriptor: true, 
+                                                    is_face_enabled: true 
+                                                })}
+                                            />
+                                        </div>
                                     )}
                                 </div>
                             </div>
