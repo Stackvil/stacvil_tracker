@@ -1,8 +1,8 @@
 import axios from 'axios';
 
-// Automatically use /api in production, or the env variable if provided
-const API_URL = import.meta.env.VITE_API_URL ||
-    (import.meta.env.PROD ? '/api' : 'http://localhost:5000/api');
+// Always use relative /api path — same as production (https://track.stackvil.com/api/...)
+// In local dev, Vite proxy forwards /api/* → http://localhost:5000/api/*
+const API_URL = import.meta.env.VITE_API_URL || '/api';
 
 const api = axios.create({
     baseURL: API_URL,

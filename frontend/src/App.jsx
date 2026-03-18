@@ -12,6 +12,7 @@ import LeaveManagement from './pages/LeaveManagement';
 import RestrictedAccess from './pages/RestrictedAccess';
 import POS from './pages/POS';
 import MonthlyAttendance from './pages/MonthlyAttendance';
+import Settings from './pages/Settings';
 
 function App() {
   return (
@@ -38,6 +39,7 @@ function App() {
               <Route path="/admin/leaves" element={<LeaveManagement />} />
               <Route path="/admin/reports" element={<Reports />} />
               <Route path="/admin/monthly-attendance" element={<MonthlyAttendance />} />
+              <Route path="/admin/settings" element={<Settings />} />
             </Route>
           </Route>
 

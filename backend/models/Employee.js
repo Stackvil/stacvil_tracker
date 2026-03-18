@@ -45,6 +45,18 @@ const employeeSchema = new mongoose.Schema({
     created_at: {
         type: Date,
         default: Date.now
+    },
+    face_descriptor: {
+        type: [Number],
+        default: []
+    },
+    is_face_enabled: {
+        type: Boolean,
+        default: false
+    },
+    is_wifi_login_enabled: {
+        type: Boolean,
+        default: true
     }
 });
 

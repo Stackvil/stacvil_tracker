@@ -5,6 +5,7 @@ const {
     getDailyReports,
     getAnalytics,
     createEmployee,
+    updateEmployee,
     assignTask,
     getAdminTasks,
     respondToDecline,
@@ -15,12 +16,15 @@ const {
     forceLogoutAll,
     forceLogoutEmployee,
     getMonthlyAttendance,
-    updateMonthlyAttendance
+    updateMonthlyAttendance,
+    getSettings,
+    updateSettings
 } = require('../controllers/adminController');
 const { protect, admin } = require('../middleware/auth');
 
 router.get('/employees', protect, admin, getEmployees);
 router.post('/employees', protect, admin, createEmployee);
+router.put('/employees/:emp_no', protect, admin, updateEmployee);
 router.delete('/employees/:emp_no', protect, admin, deleteEmployee);
 router.get('/reports/daily', protect, admin, getDailyReports);
 router.get('/reports/monthly', protect, admin, getMonthlyAttendance);
@@ -35,6 +39,8 @@ router.get('/login-requests', protect, admin, getLoginRequests);
 router.post('/handle-login-request/:id', protect, admin, handleLoginRequest);
 router.post('/force-logout-all', protect, admin, forceLogoutAll);
 router.post('/force-logout/:emp_no', protect, admin, forceLogoutEmployee);
+router.get('/settings', protect, admin, getSettings);
+router.post('/settings', protect, admin, updateSettings);
 
 
 module.exports = router;

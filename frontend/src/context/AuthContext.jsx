@@ -66,9 +66,9 @@ export const AuthProvider = ({ children }) => {
         }
     }, [user]);
 
-    const login = async (emp_no, password) => {
+    const login = async (emp_no, password, wifi_ssid = null, face_descriptor = null) => {
         try {
-            const response = await api.post('/auth/login', { emp_no, password });
+            const response = await api.post('/auth/login', { emp_no, password, wifi_ssid, face_descriptor });
             const { token, user: loggedInUser, isRestricted } = response.data;
             const userData = { ...loggedInUser, isRestricted };
 

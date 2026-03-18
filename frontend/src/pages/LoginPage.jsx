@@ -1,9 +1,10 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { LogIn, User, Lock, AlertCircle, Eye, EyeOff } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { LogIn, User, Lock, AlertCircle, Eye, EyeOff, Camera } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
 import { io } from 'socket.io-client';
+import FaceCapture from '../components/FaceCapture';
 
 const LoginPage = () => {
     const [empNo, setEmpNo] = useState('');
@@ -14,9 +15,34 @@ const LoginPage = () => {
     const [showRequestModal, setShowRequestModal] = useState(false);
     const [requestReason, setRequestReason] = useState('');
     const [requestStatus, setRequestStatus] = useState(null);
+    const [faceRequired, setFaceRequired] = useState(false);
+    const [wifiSSID, setWifiSSID] = useState(null);
     const { login, user, loading } = useContext(AuthContext);
     const navigate = useNavigate();
     const [searchParams] = useSearchParams();
+
+    // Check for WiFi SSID passed from Native Bridge
+    useEffect(() => {
+        const checkWifi = () => {
+            if (window.ReactNativeWebView) {
+                // We ask the native side for SSID
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'GET_WIFI_SSID' }));
+            }
+        };
+        checkWifi();
+
+        const handleMessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'WIFI_SSID') {
+                    setWifiSSID(data.ssid);
+                }
+            } catch (e) { }
+        };
+
+        window.addEventListener('message', handleMessage);
+        return () => window.removeEventListener('message', handleMessage);
+    }, []);
 
     useEffect(() => {
         const reason = searchParams.get('reason');
@@ -57,12 +83,12 @@ const LoginPage = () => {
         }
     }, [showRequestModal, empNo]);
 
-    const handleSubmit = async (e) => {
+    const handleSubmit = async (e, faceDescriptor = null) => {
         if (e) e.preventDefault();
         setError('');
         setIsSubmitting(true);
 
-        const result = await login(empNo, password);
+        const result = await login(empNo, password, wifiSSID, faceDescriptor);
 
         if (result.success) {
             if (result.role === 'admin') {
@@ -74,6 +100,9 @@ const LoginPage = () => {
             }
         } else {
             setError(result.message);
+            if (result.data?.face_required) {
+                setFaceRequired(true);
+            }
             if (result.data?.restricted) {
                 setShowRequestModal(true);
             }
@@ -238,6 +267,37 @@ const LoginPage = () => {
                     </motion.div>
                 </div>
             )}
+            
+            {/* Face Verification Modal */}
+            <AnimatePresence>
+                {faceRequired && (
+                    <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[60]">
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="bg-white rounded-3xl p-8 max-w-md w-full shadow-2xl text-center"
+                        >
+                            <div className="w-20 h-20 bg-indigo-100 text-indigo-600 rounded-full flex items-center justify-center mx-auto mb-6">
+                                <Camera className="w-10 h-10" />
+                            </div>
+                            <h2 className="text-2xl font-bold text-gray-800 mb-2">Biometric Verification</h2>
+                            <p className="text-gray-600 mb-8 text-sm">Please verify your face to complete the login process.</p>
+                            
+                            <FaceCapture 
+                                label="Verify Identity"
+                                onCapture={(descriptor) => handleSubmit(null, descriptor)}
+                            />
+                            
+                            <button
+                                onClick={() => setFaceRequired(false)}
+                                className="mt-6 text-gray-400 hover:text-gray-600 font-medium text-sm transition-colors"
+                            >
+                                Cancel Verification
+                            </button>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
         </div>
 
     );

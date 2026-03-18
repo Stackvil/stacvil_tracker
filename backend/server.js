@@ -1,12 +1,14 @@
 const express = require('express');
 const cors = require('cors');
 const morgan = require('morgan');
+const path = require('path');
 const dotenv = require('dotenv');
+
+// Load .env using absolute path so it works regardless of CWD
+dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const connectDB = require('./config/db');
 const mongoose = require('mongoose');
-
-dotenv.config();
 
 // Connect to Database
 // connectDB(); // Removed top-level call for Vercel compatibility
@@ -21,17 +23,6 @@ const utilsRoutes = require('./routes/utilsRoutes');
 
 const app = express();
 
-// Middleware to ensure DB connection
-app.use(async (req, res, next) => {
-    try {
-        await connectDB();
-        next();
-    } catch (error) {
-        console.error('Database connection failed:', error);
-        res.status(500).json({ message: 'Database connection failed', error: error.message });
-    }
-});
-
 // Middleware
 app.use(cors({
     origin: [
@@ -44,6 +35,18 @@ app.use(cors({
 }));
 app.use(express.json());
 app.use(morgan('dev'));
+
+// Middleware to ensure DB connection
+app.use(async (req, res, next) => {
+    try {
+        await connectDB();
+        next();
+    } catch (error) {
+        console.error('Database connection failed:', error);
+        res.status(500).json({ message: 'Database connection failed', error: error.message });
+    }
+});
+
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {

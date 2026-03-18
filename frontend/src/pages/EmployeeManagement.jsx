@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { User, Mail, Shield, Search, Filter, Plus, Briefcase, X, Calendar, Trash2, ClipboardList, CheckCircle2, Clock, AlertCircle, XCircle, ChevronDown, ChevronUp } from 'lucide-react';
+import { User, Mail, Shield, Search, Filter, Plus, Briefcase, X, Calendar, Trash2, Pencil, ClipboardList, CheckCircle2, Clock, AlertCircle, XCircle, ChevronDown, ChevronUp, Wifi, Camera } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import AttendanceCalendar from '../components/AttendanceCalendar';
+import FaceCapture from '../components/FaceCapture';
 
 const EmployeeManagement = () => {
     const [employees, setEmployees] = useState([]);
@@ -16,7 +17,8 @@ const EmployeeManagement = () => {
     const [filterDate, setFilterDate] = useState(new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' }));
 
     const [createForm, setCreateForm] = useState({
-        emp_no: '', name: '', full_name: '', email: '', password: '', role: 'employee'
+        emp_no: '', name: '', full_name: '', email: '', password: '', role: 'employee',
+        face_descriptor: [], is_face_enabled: false, is_wifi_login_enabled: true
     });
 
     // Simplified assign form — no dates, no percentage
@@ -36,6 +38,11 @@ const EmployeeManagement = () => {
     const [loadingAttendance, setLoadingAttendance] = useState(false);
     const [showDeleteModal, setShowDeleteModal] = useState(null);
     const [showDeleteTaskModal, setShowDeleteTaskModal] = useState(null); // taskId
+    const [showEditModal, setShowEditModal] = useState(null); // employee object
+    const [editForm, setEditForm] = useState({
+        name: '', full_name: '', email: '', password: '', role: 'employee',
+        face_descriptor: [], is_face_enabled: false, is_wifi_login_enabled: true
+    });
 
     useEffect(() => {
         fetchEmployees();
@@ -79,7 +86,10 @@ const EmployeeManagement = () => {
             await api.post('/admin/employees', createForm);
             setSuccess('Employee created successfully!');
             setShowCreateModal(false);
-            setCreateForm({ emp_no: '', name: '', full_name: '', email: '', password: '', role: 'employee' });
+            setCreateForm({ 
+                emp_no: '', name: '', full_name: '', email: '', password: '', role: 'employee',
+                face_descriptor: [], is_face_enabled: false, is_wifi_login_enabled: true 
+            });
             fetchEmployees();
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
@@ -141,6 +151,21 @@ const EmployeeManagement = () => {
             setError('Failed to fetch attendance records');
         } finally {
             setLoadingAttendance(false);
+        }
+    };
+
+    const handleEditEmployee = async (e) => {
+        e.preventDefault();
+        setError('');
+        setSuccess('');
+        try {
+            await api.put(`/admin/employees/${showEditModal.emp_no}`, editForm);
+            setSuccess('Employee updated successfully!');
+            setShowEditModal(null);
+            fetchEmployees();
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to update employee');
         }
     };
 
@@ -269,13 +294,34 @@ const EmployeeManagement = () => {
                             </div>
                         </div>
                         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap justify-between gap-2">
-                            <button
-                                onClick={() => setShowDeleteModal(emp.emp_no)}
-                                className="text-xs font-bold text-red-600 hover:text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all flex items-center gap-1"
-                            >
-                                <Trash2 className="w-3 h-3" />
-                                Delete
-                            </button>
+                            <div className="flex gap-2">
+                                <button
+                                    onClick={() => {
+                                        setShowEditModal(emp);
+                                        setEditForm({
+                                            name: emp.name,
+                                            full_name: emp.full_name || '',
+                                            email: emp.email,
+                                            password: '',
+                                            role: emp.role,
+                                            face_descriptor: emp.face_descriptor || [],
+                                            is_face_enabled: emp.is_face_enabled || false,
+                                            is_wifi_login_enabled: emp.is_wifi_login_enabled !== undefined ? emp.is_wifi_login_enabled : true
+                                        });
+                                    }}
+                                    className="text-xs font-bold text-indigo-600 hover:text-indigo-700 px-3 py-1.5 rounded-lg hover:bg-indigo-50 transition-all flex items-center gap-1"
+                                >
+                                    <Pencil className="w-3 h-3" />
+                                    Edit
+                                </button>
+                                <button
+                                    onClick={() => setShowDeleteModal(emp.emp_no)}
+                                    className="text-xs font-bold text-red-600 hover:text-red-700 px-3 py-1.5 rounded-lg hover:bg-red-50 transition-all flex items-center gap-1"
+                                >
+                                    <Trash2 className="w-3 h-3" />
+                                    Delete
+                                </button>
+                            </div>
                             <div className="flex gap-2">
                                 <button
                                     onClick={() => fetchEmployeeAttendance(emp.emp_no)}
@@ -453,6 +499,56 @@ const EmployeeManagement = () => {
                                     <option value="admin">Admin</option>
                                 </select>
                             </div>
+
+                            <div className="space-y-4 pt-2">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
+                                            <Wifi className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-800">WiFi Login Restricted</p>
+                                            <p className="text-[10px] text-gray-500 font-medium">Require Office WiFi for login</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setCreateForm({ ...createForm, is_wifi_login_enabled: !createForm.is_wifi_login_enabled })}
+                                        className={`w-12 h-6 rounded-full transition-all relative ${createForm.is_wifi_login_enabled ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${createForm.is_wifi_login_enabled ? 'right-1' : 'left-1'}`} />
+                                    </button>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-3">Face Detection Enrollment (Optional)</label>
+                                    {createForm.face_descriptor?.length > 0 ? (
+                                        <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
+                                                    <CheckCircle2 className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-green-800">Face Enrolled</p>
+                                                    <p className="text-[10px] text-green-600 font-medium">Biometric data ready</p>
+                                                </div>
+                                            </div>
+                                            <button
+                                                type="button"
+                                                onClick={() => setCreateForm({ ...createForm, face_descriptor: [], is_face_enabled: false })}
+                                                className="text-xs font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all"
+                                            >
+                                                Reset
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <FaceCapture
+                                            label="Enroll Face for Secure Login"
+                                            onCapture={(descriptor) => setCreateForm({ ...createForm, face_descriptor: descriptor, is_face_enabled: true })}
+                                        />
+                                    )}
+                                </div>
+                            </div>
                             <div className="flex gap-3 pt-4">
                                 <button type="button" onClick={() => { setShowCreateModal(false); setError(''); }} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
                                 <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-all">Create Employee</button>
@@ -629,6 +725,106 @@ const EmployeeManagement = () => {
                     </Modal>
                 )}
             </AnimatePresence >
+ 
+            {/* Edit Employee Modal */}
+            <AnimatePresence>
+                {showEditModal && (
+                    <Modal
+                        title={`Edit Employee: ${showEditModal.emp_no}`}
+                        onClose={() => { setShowEditModal(null); setError(''); }}
+                    >
+                        {error && <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl">{error}</div>}
+                        <form onSubmit={handleEditEmployee} className="space-y-4">
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Username (Login Name)</label>
+                                <input type="text" required value={editForm.name} onChange={(e) => setEditForm({ ...editForm, name: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Full Name</label>
+                                <input type="text" required value={editForm.full_name} onChange={(e) => setEditForm({ ...editForm, full_name: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Email</label>
+                                <input type="email" required value={editForm.email} onChange={(e) => setEditForm({ ...editForm, email: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Change Password <span className="text-gray-400 font-normal">(optional)</span></label>
+                                <input type="password" value={editForm.password} onChange={(e) => setEditForm({ ...editForm, password: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none" placeholder="Leave blank to keep current" />
+                            </div>
+                            <div>
+                                <label className="block text-sm font-semibold text-gray-700 mb-1">Role</label>
+                                <select value={editForm.role} onChange={(e) => setEditForm({ ...editForm, role: e.target.value })} className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 outline-none">
+                                    <option value="employee">Employee</option>
+                                    <option value="admin">Admin</option>
+                                </select>
+                            </div>
+
+                            <div className="space-y-4 pt-2">
+                                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-xl border border-gray-100">
+                                    <div className="flex items-center gap-3">
+                                        <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center text-indigo-600">
+                                            <Wifi className="w-6 h-6" />
+                                        </div>
+                                        <div>
+                                            <p className="text-sm font-bold text-gray-800">WiFi Login Restricted</p>
+                                            <p className="text-[10px] text-gray-500 font-medium">Require Office WiFi for login</p>
+                                        </div>
+                                    </div>
+                                    <button
+                                        type="button"
+                                        onClick={() => setEditForm({ ...editForm, is_wifi_login_enabled: !editForm.is_wifi_login_enabled })}
+                                        className={`w-12 h-6 rounded-full transition-all relative ${editForm.is_wifi_login_enabled ? 'bg-indigo-600' : 'bg-gray-300'}`}
+                                    >
+                                        <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${editForm.is_wifi_login_enabled ? 'right-1' : 'left-1'}`} />
+                                    </button>
+                                </div>
+
+                                <div>
+                                    <label className="block text-sm font-semibold text-gray-700 mb-3">Face Detection Update (Optional)</label>
+                                    {editForm.is_face_enabled ? (
+                                        <div className="bg-green-50 border border-green-100 rounded-2xl p-4 flex items-center justify-between">
+                                            <div className="flex items-center gap-3">
+                                                <div className="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center text-green-600">
+                                                    <CheckCircle2 className="w-6 h-6" />
+                                                </div>
+                                                <div>
+                                                    <p className="text-sm font-bold text-green-800">Face Enrolled</p>
+                                                    <p className="text-[10px] text-green-600 font-medium">Biometric login active</p>
+                                                </div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditForm({ ...editForm, is_face_enabled: false })}
+                                                    className="text-xs font-bold text-orange-600 hover:bg-orange-50 px-3 py-1.5 rounded-lg transition-all"
+                                                >
+                                                    Disable
+                                                </button>
+                                                <button
+                                                    type="button"
+                                                    onClick={() => setEditForm({ ...editForm, face_descriptor: [], is_face_enabled: false })}
+                                                    className="text-xs font-bold text-red-600 hover:bg-red-50 px-3 py-1.5 rounded-lg transition-all"
+                                                >
+                                                    Clear Data
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ) : (
+                                        <FaceCapture
+                                            label="Enroll Face for Secure Login"
+                                            onCapture={(descriptor) => setEditForm({ ...editForm, face_descriptor: descriptor, is_face_enabled: true })}
+                                        />
+                                    )}
+                                </div>
+                            </div>
+                            <div className="flex gap-3 pt-4">
+                                <button type="button" onClick={() => { setShowEditModal(null); setError(''); }} className="flex-1 px-4 py-2 border border-gray-200 rounded-xl text-gray-700 font-medium hover:bg-gray-50 transition-all">Cancel</button>
+                                <button type="submit" className="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-xl font-medium hover:bg-indigo-700 transition-all">Update Employee</button>
+                            </div>
+                        </form>
+                    </Modal>
+                )}
+            </AnimatePresence>
         </div >
     );
 };

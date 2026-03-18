@@ -1,7 +1,8 @@
 const mongoose = require('mongoose');
+const path = require('path');
 const dotenv = require('dotenv');
 
-dotenv.config();
+dotenv.config({ path: path.resolve(__dirname, '..', '.env') });
 
 let cached = global.mongoose;
 
@@ -17,6 +18,7 @@ const connectDB = async () => {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false, // Disable buffering to fail fast if connection fails
+      serverSelectionTimeoutMS: 15000,
     };
 
     if (!process.env.MONGODB_URI) {

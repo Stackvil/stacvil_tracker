@@ -5,6 +5,7 @@ const jwt = require('jsonwebtoken');
 const { getISTTime, getServerTime } = require('./utilsController');
 const crypto = require('crypto');
 const Session = require('../models/Session');
+const Settings = require('../models/Settings');
 
 // @desc    Register a new employee
 // @route   POST /api/auth/register
@@ -41,7 +42,7 @@ const registerEmployee = async (req, res) => {
 // @desc    Login employee & get token
 // @route   POST /api/auth/login
 const loginEmployee = async (req, res) => {
-    const { emp_no, password, device_info } = req.body;
+    const { emp_no, password, device_info, wifi_ssid, face_descriptor } = req.body;
     const cleanEmpNo = emp_no?.trim().toUpperCase();
 
     try {
@@ -65,6 +66,62 @@ const loginEmployee = async (req, res) => {
 
         if (!isMatch) {
             return res.status(401).json({ message: 'Invalid credentials' });
+        }
+
+        // --- WiFi / Network Restriction Check ---
+        if (employee.role !== 'admin' && employee.is_wifi_login_enabled) {
+            try {
+                const settings = await Settings.findOne();
+                const allowedSsid = settings?.office_wifi_ssid;
+                const allowedIp = settings?.office_public_ip;
+
+                const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip || '').split(',')[0].trim();
+
+                if (wifi_ssid) {
+                    if (allowedSsid && allowedSsid !== 'Your_Office_WiFi_Name') {
+                        if (wifi_ssid.trim() !== allowedSsid.trim()) {
+                            return res.status(403).json({
+                                message: 'Login Denied: You must be connected to the authorized Office Wi-Fi network.',
+                                error: 'SSID_MISMATCH'
+                            });
+                        }
+                    }
+                } else if (allowedIp && allowedIp.trim() !== '') {
+                    if (clientIp !== allowedIp.trim()) {
+                        return res.status(403).json({
+                            message: 'Login Denied: Unauthorized network. Mobile browser users must be on Office WiFi.',
+                            error: 'IP_MISMATCH'
+                        });
+                    }
+                }
+            } catch (settingsErr) {
+                console.warn('[AUTH] Network settings check failed:', settingsErr.message);
+            }
+        }
+
+        // --- Face Verification Check ---
+        if (employee.is_face_enabled && face_descriptor) {
+            if (!employee.face_descriptor || employee.face_descriptor.length === 0) {
+                return res.status(400).json({ message: 'Face data not found for your account. Please contact admin.' });
+            }
+
+            // Simple Euclidean Distance Check (threshold 0.55)
+            const descriptor1 = Array.isArray(face_descriptor) ? face_descriptor : Object.values(face_descriptor);
+            const descriptor2 = employee.face_descriptor;
+            
+            let sum = 0;
+            const len = Math.min(descriptor1.length, descriptor2.length, 128);
+            for (let i = 0; i < len; i++) {
+                const diff = (descriptor1[i] || 0) - (descriptor2[i] || 0);
+                sum += diff * diff;
+            }
+            const distance = Math.sqrt(sum);
+
+            if (distance > 0.55) {
+                return res.status(403).json({ message: 'Face verification failed. Access denied.' });
+            }
+        } else if (employee.is_face_enabled && !face_descriptor) {
+            return res.status(403).json({ message: 'Face verification required.', face_required: true });
         }
 
         // OFFICE HOURS CHECK (Employee Only)
@@ -180,7 +237,9 @@ const loginEmployee = async (req, res) => {
                 name: employee.name,
                 role: employee.role,
                 login_time: now,
-                isRestricted
+                isRestricted,
+                is_face_enabled: employee.is_face_enabled,
+                is_wifi_login_enabled: employee.is_wifi_login_enabled
             }
         });
     } catch (error) {

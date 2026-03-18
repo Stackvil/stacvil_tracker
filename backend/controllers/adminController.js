@@ -1,8 +1,33 @@
 const Employee = require('../models/Employee');
 const Attendance = require('../models/Attendance');
+const LoginRequest = require('../models/LoginRequest');
 const Task = require('../models/Task');
+const Settings = require('../models/Settings');
 const bcrypt = require('bcryptjs');
 const { getISTTime } = require('./utilsController');
+
+// AI Feature Vector Matcher (Euclidean Distance fallback for 128-d face embeddings)
+const calculateFaceSimilarity = (descriptor1, descriptor2) => {
+    try {
+        const a1 = Array.isArray(descriptor1) ? descriptor1 : Object.values(descriptor1 || {});
+        const a2 = Array.isArray(descriptor2) ? descriptor2 : Object.values(descriptor2 || {});
+
+        if (a1.length === 0 || a2.length === 0) return 999;
+
+        let sum = 0;
+        const len = Math.min(a1.length, a2.length, 128);
+        for (let i = 0; i < len; i++) {
+            const val1 = Number(a1[i]) || 0;
+            const val2 = Number(a2[i]) || 0;
+            const diff = val1 - val2;
+            sum += diff * diff;
+        }
+        return Math.sqrt(sum);
+    } catch (e) {
+        console.error("AI Matcher Error:", e);
+        return 999;
+    }
+};
 
 // @desc    Get all employees
 // @route   GET /api/admin/employees
@@ -222,7 +247,7 @@ const getAnalytics = async (req, res) => {
 
 // @desc    Create employee (Admin only)
 const createEmployee = async (req, res) => {
-    const { emp_no, name, email, password, role } = req.body;
+    const { emp_no, name, full_name, email, password, role, face_descriptor, is_face_enabled, is_wifi_login_enabled } = req.body;
 
     try {
         if (!emp_no || !name || !email || !password) {
@@ -234,7 +259,30 @@ const createEmployee = async (req, res) => {
             return res.status(400).json({ message: 'Employee ID or email already exists' });
         }
 
-        const employee = new Employee({ emp_no, name, email, password, role: role || 'employee' });
+        // Face Uniqueness Check
+        if (face_descriptor && face_descriptor.length > 0) {
+            const allFaceUsers = await Employee.find({ face_descriptor: { $exists: true, $not: { $size: 0 } } });
+            for (const existingUser of allFaceUsers) {
+                const distance = calculateFaceSimilarity(face_descriptor, existingUser.face_descriptor);
+                if (distance < 0.60) {
+                    return res.status(400).json({ 
+                        message: `Face Uniqueness Error: This face is already enrolled under employee "${existingUser.full_name || existingUser.name}" (ID: ${existingUser.emp_no}).` 
+                    });
+                }
+            }
+        }
+
+        const employee = new Employee({ 
+            emp_no, 
+            name, 
+            full_name: full_name || '', 
+            email, 
+            password, 
+            role: role || 'employee',
+            face_descriptor: face_descriptor || [],
+            is_face_enabled: is_face_enabled || false,
+            is_wifi_login_enabled: is_wifi_login_enabled !== undefined ? is_wifi_login_enabled : true
+        });
         await employee.save();
 
         res.status(201).json({ message: 'Employee created successfully' });
@@ -773,11 +821,92 @@ const updateMonthlyAttendance = async (req, res) => {
     }
 };
 
+// @desc    Update employee details (Admin only)
+const updateEmployee = async (req, res) => {
+    const { emp_no } = req.params;
+    const { name, full_name, email, role, password, face_descriptor, is_face_enabled, is_wifi_login_enabled } = req.body;
+
+    try {
+        const employee = await Employee.findOne({ emp_no });
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee not found' });
+        }
+
+        if (name) employee.name = name;
+        if (full_name) employee.full_name = full_name;
+        if (email) employee.email = email;
+        if (role) employee.role = role;
+        if (password && password.trim() !== '') {
+            employee.password = password;
+        }
+        if (face_descriptor) {
+            // Uniqueness check for face update
+            const otherFaceUsers = await Employee.find({ emp_no: { $ne: emp_no }, face_descriptor: { $exists: true, $not: { $size: 0 } } });
+            for (const other of otherFaceUsers) {
+                const dist = calculateFaceSimilarity(face_descriptor, other.face_descriptor);
+                if (dist < 0.60) {
+                    return res.status(400).json({ message: `Face match found with ${other.emp_no}` });
+                }
+            }
+            employee.face_descriptor = face_descriptor;
+        }
+        if (is_face_enabled !== undefined) employee.is_face_enabled = is_face_enabled;
+        if (is_wifi_login_enabled !== undefined) employee.is_wifi_login_enabled = is_wifi_login_enabled;
+
+        await employee.save();
+        res.json({ message: 'Employee updated successfully', employee });
+    } catch (error) {
+        console.error(error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Get application settings
+// @route   GET /api/admin/settings
+const getSettings = async (req, res) => {
+    try {
+        const settings = await Settings.findOne({});
+        const currentIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        
+        // Return empty settings if none exist, plus the current IP hint
+        res.json({
+            ...(settings ? settings.toObject() : {}),
+            current_ip: currentIp
+        });
+    } catch (error) {
+        console.error('Error fetching settings:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Update application settings
+// @route   POST /api/admin/settings
+const updateSettings = async (req, res) => {
+    try {
+        const { office_wifi_ssid, office_public_ip } = req.body;
+
+        let settings = await Settings.findOne({});
+        if (!settings) {
+            settings = new Settings({});
+        }
+
+        if (office_wifi_ssid !== undefined) settings.office_wifi_ssid = office_wifi_ssid;
+        if (office_public_ip !== undefined) settings.office_public_ip = office_public_ip;
+
+        await settings.save();
+        res.json({ message: 'Settings updated successfully', settings });
+    } catch (error) {
+        console.error('Error updating settings:', error);
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     getEmployees,
     getDailyReports,
     getAnalytics,
     createEmployee,
+    updateEmployee,
     assignTask,
     getAdminTasks,
     respondToDecline,
@@ -787,7 +916,8 @@ module.exports = {
     handleLoginRequest,
     forceLogoutAll,
     forceLogoutEmployee,
+    getSettings,
+    updateSettings,
     getMonthlyAttendance,
     updateMonthlyAttendance
 };
-
