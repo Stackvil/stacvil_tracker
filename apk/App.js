@@ -75,13 +75,25 @@ export default function App() {
 
             // 2. WiFi Detection (Web -> Native Request)
             if (data.type === 'GET_WIFI_SSID') {
-                // In a pure Expo/RN project without native WiFi libraries, 
-                // we return a signal that native detection is active (allows backend to fallback to IP)
                 webViewRef.current.postMessage(JSON.stringify({ 
                     type: 'WIFI_SSID', 
-                    ssid: 'NATIVE_BOUND', // Marker for backend to know it's the mobile app
+                    ssid: 'NATIVE_BOUND', 
                     status: 'active'
                 }));
+            }
+
+            // 3. Camera Request (Web -> Native Request)
+            if (data.type === 'REQUEST_CAMERA' && Platform.OS === 'android') {
+                PermissionsAndroid.request(
+                    PermissionsAndroid.PERMISSIONS.CAMERA,
+                    {
+                        title: "Camera Permission",
+                        message: "Stackvil Tracker needs access to your camera for face authentication.",
+                        buttonNeutral: "Ask Me Later",
+                        buttonNegative: "Cancel",
+                        buttonPositive: "OK"
+                    }
+                ).catch(err => console.warn(err));
             }
         } catch (e) {
             console.error('WebView Bridge Error:', e);
@@ -141,12 +153,35 @@ export default function App() {
                         allowsInlineMediaPlayback={true}
                         mediaPlaybackRequiresUserAction={false}
                         originWhitelist={['*']}
-                        onPermissionRequest={(event) => {
+                        onPermissionRequest={async (event) => {
                             const { resources } = event.nativeEvent;
-                            if (resources.includes('VIDEO_CAPTURE') || resources.includes('AUDIO_CAPTURE')) {
+                            if (Platform.OS === 'android') {
+                                if (resources.includes('VIDEO_CAPTURE') || resources.includes('AUDIO_CAPTURE')) {
+                                    try {
+                                        const granted = await PermissionsAndroid.request(
+                                            PermissionsAndroid.PERMISSIONS.CAMERA,
+                                            {
+                                                title: "Camera Permission",
+                                                message: "Stackvil Tracker needs access to your camera for face authentication.",
+                                                buttonNeutral: "Ask Me Later",
+                                                buttonNegative: "Cancel",
+                                                buttonPositive: "OK"
+                                            }
+                                        );
+                                        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
+                                            event.grant(resources);
+                                        } else {
+                                            console.warn('Camera permission denied.');
+                                        }
+                                    } catch (err) {
+                                        console.warn(err);
+                                    }
+                                }
+                            } else {
                                 event.grant(resources);
                             }
                         }}
+
                         
                         // Performance & Caching
                         cacheEnabled={true}

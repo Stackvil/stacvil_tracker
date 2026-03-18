@@ -49,6 +49,14 @@ const FaceCapture = ({ onCapture, targetDescriptor = null, onVerify = null, onMi
     const startCamera = async () => {
         try {
             setError(null);
+            setStatus('Requesting Camera Access...');
+            
+            // If running inside React Native WebView, hint it to ask for permissions
+            if (window.ReactNativeWebView) {
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'REQUEST_CAMERA' }));
+                await new Promise(resolve => setTimeout(resolve, 500)); // Small wait for native to react
+            }
+
             const mediaStream = await navigator.mediaDevices.getUserMedia({
                 video: { width: 640, height: 480, facingMode: 'user' }
             });
@@ -57,7 +65,7 @@ const FaceCapture = ({ onCapture, targetDescriptor = null, onVerify = null, onMi
             setStatus('Camera Active');
         } catch (err) {
             console.error('Camera Access Error:', err);
-            setError('Could not access camera. Please check permissions.');
+            setError(`Could not access camera. Please allow permissions. (${err.name || 'Error'})`);
         }
     };
 
