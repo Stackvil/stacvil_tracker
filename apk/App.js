@@ -1,8 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, StatusBar, ActivityIndicator, Text, Platform, PermissionsAndroid, BackHandler } from 'react-native';
+import {
+    StyleSheet, View, StatusBar, ActivityIndicator, Text,
+    Platform, PermissionsAndroid, BackHandler
+} from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import NativeFaceCapture from './NativeFaceCapture';
 
 export default function App() {
     const webViewRef = useRef(null);
@@ -10,6 +14,8 @@ export default function App() {
     const [isLoading, setIsLoading] = useState(true);
     const [initialUrl, setInitialUrl] = useState('https://track.stackvil.com/');
     const [canGoBack, setCanGoBack] = useState(false);
+    const [faceCaptureVisible, setFaceCaptureVisible] = useState(false);
+    const [faceCaptureMode, setFaceCaptureMode] = useState('enroll'); // 'enroll' | 'verify'
 
     // Initial Preparation: Permissions and persistence
     useEffect(() => {
@@ -47,6 +53,10 @@ export default function App() {
     // Handle Android Back Button
     useEffect(() => {
         const backAction = () => {
+            if (faceCaptureVisible) {
+                setFaceCaptureVisible(false);
+                return true;
+            }
             if (canGoBack && webViewRef.current) {
                 webViewRef.current.goBack();
                 return true;
@@ -56,12 +66,13 @@ export default function App() {
 
         const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
         return () => backHandler.remove();
-    }, [canGoBack]);
+    }, [canGoBack, faceCaptureVisible]);
 
+    // Handle message from WebView web pages
     const handleMessage = async (event) => {
         try {
             const data = JSON.parse(event.nativeEvent.data);
-            
+
             // 1. Authentication Sync (Web -> Native)
             if (data.type === 'AUTH_SYNC') {
                 if (data.token) {
@@ -75,40 +86,49 @@ export default function App() {
 
             // 2. WiFi Detection (Web -> Native Request)
             if (data.type === 'GET_WIFI_SSID') {
-                webViewRef.current.postMessage(JSON.stringify({ 
-                    type: 'WIFI_SSID', 
-                    ssid: 'NATIVE_BOUND', 
+                webViewRef.current?.postMessage(JSON.stringify({
+                    type: 'WIFI_SSID',
+                    ssid: 'NATIVE_BOUND', // Backend falls back to IP check for mobile
                     status: 'active'
                 }));
             }
 
-            // 3. Camera Request (Web -> Native Request)
-            if (data.type === 'REQUEST_CAMERA' && Platform.OS === 'android') {
-                PermissionsAndroid.request(
-                    PermissionsAndroid.PERMISSIONS.CAMERA,
-                    {
-                        title: "Camera Permission",
-                        message: "Stackvil Tracker needs access to your camera for face authentication.",
-                        buttonNeutral: "Ask Me Later",
-                        buttonNegative: "Cancel",
-                        buttonPositive: "OK"
-                    }
-                ).catch(err => console.warn(err));
+            // 3. Native Face Capture Request (Web -> Native)
+            // The website sends this when user taps "Start Camera" on the face capture component
+            if (data.type === 'OPEN_NATIVE_CAMERA') {
+                setFaceCaptureMode(data.mode || 'enroll');
+                setFaceCaptureVisible(true);
             }
+
         } catch (e) {
             console.error('WebView Bridge Error:', e);
         }
     };
 
-    // Script to ensure the Web localstorage matches Native AsyncStorage on load
+    // Called when user captures a photo natively - sends base64 image to the website
+    const handleNativeCapture = (base64Image) => {
+        setFaceCaptureVisible(false);
+        // Send the captured image back to the web page for face-api.js processing
+        if (webViewRef.current) {
+            const script = `
+                (function() {
+                    window.dispatchEvent(new CustomEvent('NATIVE_FACE_CAPTURED', {
+                        detail: { image: '${base64Image}', mode: '${faceCaptureMode}' }
+                    }));
+                })();
+                true;
+            `;
+            webViewRef.current.injectJavaScript(script);
+        }
+    };
+
+    // Script to ensure the Web localStorage matches Native AsyncStorage on load
     const injectedJS = `
         (function() {
             try {
                 const nativeToken = ${initialToken?.token ? `'${initialToken.token}'` : 'null'};
                 const nativeUser = ${initialToken?.user ? `'${initialToken.user.replace(/'/g, "\\'")}'` : 'null'};
-                
                 const webToken = window.localStorage.getItem('token');
-                
                 if (nativeToken && nativeToken !== webToken) {
                     window.localStorage.setItem('token', nativeToken);
                     window.localStorage.setItem('user', nativeUser);
@@ -148,41 +168,16 @@ export default function App() {
                         onMessage={handleMessage}
                         onNavigationStateChange={(navState) => setCanGoBack(navState.canGoBack)}
                         injectedJavaScript={injectedJS}
-                        
+
                         // Media & Permissions
                         allowsInlineMediaPlayback={true}
                         mediaPlaybackRequiresUserAction={false}
                         originWhitelist={['*']}
-                        onPermissionRequest={async (event) => {
-                            const { resources } = event.nativeEvent;
-                            if (Platform.OS === 'android') {
-                                if (resources.includes('VIDEO_CAPTURE') || resources.includes('AUDIO_CAPTURE')) {
-                                    try {
-                                        const granted = await PermissionsAndroid.request(
-                                            PermissionsAndroid.PERMISSIONS.CAMERA,
-                                            {
-                                                title: "Camera Permission",
-                                                message: "Stackvil Tracker needs access to your camera for face authentication.",
-                                                buttonNeutral: "Ask Me Later",
-                                                buttonNegative: "Cancel",
-                                                buttonPositive: "OK"
-                                            }
-                                        );
-                                        if (granted === PermissionsAndroid.RESULTS.GRANTED) {
-                                            event.grant(resources);
-                                        } else {
-                                            console.warn('Camera permission denied.');
-                                        }
-                                    } catch (err) {
-                                        console.warn(err);
-                                    }
-                                }
-                            } else {
-                                event.grant(resources);
-                            }
+                        onPermissionRequest={(event) => {
+                            // Grant all web-originated permission requests
+                            event.grant(event.nativeEvent.resources);
                         }}
 
-                        
                         // Performance & Caching
                         cacheEnabled={true}
                         cacheMode="LOAD_DEFAULT"
@@ -190,6 +185,14 @@ export default function App() {
                         thirdPartyCookiesEnabled={true}
                     />
                 </View>
+
+                {/* Native Face Capture Modal - overlays when website requests camera */}
+                <NativeFaceCapture
+                    visible={faceCaptureVisible}
+                    mode={faceCaptureMode}
+                    onCapture={handleNativeCapture}
+                    onCancel={() => setFaceCaptureVisible(false)}
+                />
             </SafeAreaView>
         </SafeAreaProvider>
     );

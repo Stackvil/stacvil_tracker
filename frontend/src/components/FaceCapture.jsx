@@ -18,6 +18,69 @@ const FaceCapture = ({ onCapture, targetDescriptor = null, onVerify = null, onMi
     const matchCount = useRef(0);
     const enrollMatchCount = useRef(0);
 
+    // Detect if running inside React Native Expo WebView
+    const isNativeApp = typeof window !== 'undefined' && !!window.ReactNativeWebView;
+
+    // Listen for native camera capture result (when running in Expo Go)
+    useEffect(() => {
+        const handleNativeCapture = async (e) => {
+            const { image, mode } = e.detail;
+            if (!image) return;
+            setStatus('Processing captured image...');
+            setIsCapturing(false);
+            
+            try {
+                if (mode === 'verify' && targetDescriptor) {
+                    // Process for verification
+                    const img = document.createElement('img');
+                    img.src = image;
+                    await new Promise(resolve => { img.onload = resolve; });
+
+                    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.5 });
+                    const detection = await faceapi.detectSingleFace(img, options).withFaceLandmarks(true).withFaceDescriptor();
+
+                    if (detection) {
+                        const targetFloatArr = new Float32Array(targetDescriptor);
+                        const distance = faceapi.euclideanDistance(detection.descriptor, targetFloatArr);
+                        if (distance < 0.55) {
+                            setStatus('Identity Verified! Logging in...');
+                            if (onVerify) onVerify(true);
+                        } else {
+                            setError('Face not recognised. Please try again.');
+                            setStatus('Verification Failed');
+                        }
+                    } else {
+                        setError('No face detected in photo. Please retake.');
+                        setStatus('Try Again');
+                    }
+                } else {
+                    // Process for enrollment
+                    const img = document.createElement('img');
+                    img.src = image;
+                    await new Promise(resolve => { img.onload = resolve; });
+
+                    const options = new faceapi.TinyFaceDetectorOptions({ inputSize: 224, scoreThreshold: 0.7 });
+                    const detection = await faceapi.detectSingleFace(img, options).withFaceLandmarks(true).withFaceDescriptor();
+
+                    if (detection && detection.detection.score > 0.6) {
+                        const descriptor = Array.from(detection.descriptor);
+                        setStatus('Face Enrolled Successfully!');
+                        onCapture(descriptor);
+                    } else {
+                        setError('No clear face detected. Ensure good lighting and retake the photo.');
+                        setStatus('Try Again');
+                    }
+                }
+            } catch (err) {
+                console.error('Native face process error:', err);
+                setError(`Processing failed: ${err.message || 'Unknown error'}`);
+            }
+        };
+
+        window.addEventListener('NATIVE_FACE_CAPTURED', handleNativeCapture);
+        return () => window.removeEventListener('NATIVE_FACE_CAPTURED', handleNativeCapture);
+    }, [targetDescriptor, modelsLoaded]);
+
     useEffect(() => {
         loadModels();
         return () => stopCamera();
@@ -47,16 +110,19 @@ const FaceCapture = ({ onCapture, targetDescriptor = null, onVerify = null, onMi
     };
 
     const startCamera = async () => {
-        try {
-            setError(null);
-            setStatus('Requesting Camera Access...');
-            
-            // If running inside React Native WebView, hint it to ask for permissions
-            if (window.ReactNativeWebView) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'REQUEST_CAMERA' }));
-                await new Promise(resolve => setTimeout(resolve, 500)); // Small wait for native to react
-            }
+        setError(null);
+        setStatus('Starting Camera...');
 
+        // If running inside Expo Go / React Native WebView, use the native camera overlay
+        if (isNativeApp) {
+            const mode = targetDescriptor ? 'verify' : 'enroll';
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'OPEN_NATIVE_CAMERA', mode }));
+            setStatus('Native Camera Opened...');
+            return;
+        }
+
+        // Standard Browser camera flow
+        try {
             const mediaStream = await navigator.mediaDevices.getUserMedia({
                 video: { width: 640, height: 480, facingMode: 'user' }
             });
