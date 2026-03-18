@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
     Clock, Calendar as CalendarIcon, ChevronLeft, ChevronRight,
-    Coffee
+    Coffee, AlertCircle
 } from 'lucide-react';
 import {
     format, startOfMonth, endOfMonth, startOfWeek,
@@ -277,6 +277,60 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
                                                 )}
                                             </div>
                                         </div>
+
+                                        {/* WiFi Disconnection Alert */}
+                                        {(() => {
+                                            const history = record.wifi_history || [];
+                                            const disconnections = [];
+                                            let totalDisconnectedMs = 0;
+
+                                            for (let i = 0; i < history.length; i++) {
+                                                if (history[i].status === 'Disconnected') {
+                                                    const start = new Date(history[i].timestamp);
+                                                    const nextEntry = history.slice(i + 1).find(e => e.status === 'Connected');
+                                                    const end = nextEntry ? new Date(nextEntry.timestamp) : (record.logout_time ? new Date(record.logout_time) : new Date());
+
+                                                    const diff = end - start;
+                                                    if (diff > 0) {
+                                                        disconnections.push({
+                                                            start,
+                                                            end,
+                                                            durationFormatted: diff < 60000 ? `${Math.round(diff / 1000)}s` : `${Math.floor(diff / 60000)}m ${Math.floor((diff % 60000) / 1000)}s`
+                                                        });
+                                                        totalDisconnectedMs += diff;
+                                                    }
+                                                }
+                                            }
+
+                                            if (disconnections.length === 0) return null;
+
+                                            const totalDiscFormatted = totalDisconnectedMs < 60000 ?
+                                                `${Math.round(totalDisconnectedMs / 1000)}s` :
+                                                `${Math.floor(totalDisconnectedMs / 3600000)}h ${Math.floor((totalDisconnectedMs % 3600000) / 60000)}m`;
+
+                                            return (
+                                                <div className="mt-2 pt-2 border-t border-dashed border-gray-200">
+                                                    <div className="flex justify-between items-center mb-1">
+                                                        <span className="text-[10px] font-bold text-amber-600 uppercase flex items-center gap-1">
+                                                            <AlertCircle className="w-3 h-3" />
+                                                            WiFi Disconnections
+                                                        </span>
+                                                        <span className="text-[10px] font-black text-amber-700 bg-amber-50 px-1.5 py-0.5 rounded">
+                                                            Total: {totalDiscFormatted}
+                                                        </span>
+                                                    </div>
+                                                    <div className="space-y-1">
+                                                        {disconnections.map((d, dIdx) => (
+                                                            <div key={dIdx} className="flex justify-between text-[9px] text-gray-400 font-medium bg-white p-1.5 rounded-lg border border-gray-100">
+                                                                <span>{format(d.start, 'hh:mm:ss a')} - {format(d.end, 'hh:mm:ss a')}</span>
+                                                                <span className="font-bold text-amber-600">({d.durationFormatted})</span>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                </div>
+                                            );
+                                        })()}
+
                                         {record.logout_reason && (
                                             <div className="text-[10px] text-red-600 bg-red-50 p-2 rounded mt-1 border border-red-100">
                                                 Reason: {record.logout_reason}

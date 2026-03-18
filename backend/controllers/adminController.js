@@ -144,7 +144,10 @@ const getDailyReports = async (req, res) => {
                     const effectiveLogout = logoutTime > sevenPMIST && isFilterToday ? sevenPMIST : logoutTime;
                     durationMs = effectiveLogout - loginTime;
                     if (durationMs < 0) durationMs = 0;
-                    totalMs += durationMs;
+                    totalMs += att.total_duration_ms || durationMs;
+                } else if (loginTime && isFilterToday && !isPastSevenPM) {
+                    // Active session, use accumulated duration so far
+                    totalMs += att.total_duration_ms || (now - loginTime);
                 }
 
                 return {
@@ -190,6 +193,8 @@ const getDailyReports = async (req, res) => {
                 due_date: t.due_date || 'N/A',
                 completed_date: t.completed_date || 'N/A',
                 is_self_assigned: t.is_self_assigned || false,
+                presence_status: e.presence_status,
+                is_on_wifi: empAttendances.some(a => a.logout_time === null && a.is_on_wifi),
                 working_hours,
                 is_half_day // Added half-day flag
             };

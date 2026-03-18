@@ -7,6 +7,9 @@ export const AuthContext = createContext();
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [isOnWifi, setIsOnWifi] = useState(true); // Default to true to avoid flashing warning
+    const [currentSsid, setCurrentSsid] = useState(null);
+    const [socket, setSocket] = useState(null);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
@@ -17,7 +20,51 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
-    const [socket, setSocket] = useState(null);
+    // Listen for SSID from Native WebView
+    useEffect(() => {
+        const handleNativeMessage = (event) => {
+            try {
+                const data = JSON.parse(event.data);
+                if (data.type === 'WIFI_SSID') {
+                    setCurrentSsid(data.ssid);
+                }
+            } catch (e) {}
+        };
+        window.addEventListener('message', handleNativeMessage);
+        document.addEventListener('message', handleNativeMessage);
+        return () => {
+            window.removeEventListener('message', handleNativeMessage);
+            document.removeEventListener('message', handleNativeMessage);
+        };
+    }, []);
+
+    // Heartbeat Logic
+    useEffect(() => {
+        let heartbeatInterval;
+        if (user && user.role === 'employee') {
+            const sendHeartbeat = async () => {
+                try {
+                    // 1. Check network status
+                    const netRes = await api.post('/utils/network-check', { wifi_ssid: currentSsid });
+                    const networkStatus = netRes.data.is_on_wifi;
+                    setIsOnWifi(networkStatus);
+
+                    // 2. Send heartbeat
+                    await api.post('/utils/heartbeat', { is_on_wifi: networkStatus });
+                } catch (err) {
+                    console.error('Heartbeat failed:', err);
+                }
+            };
+
+            // Run immediately and then every 15 seconds
+            sendHeartbeat();
+            heartbeatInterval = setInterval(sendHeartbeat, 15000);
+        }
+
+        return () => {
+            if (heartbeatInterval) clearInterval(heartbeatInterval);
+        };
+    }, [user, currentSsid]);
 
     useEffect(() => {
         let newSocket;
@@ -29,41 +76,13 @@ export const AuthProvider = ({ children }) => {
 
             newSocket.on('force_logout', (data) => {
                 alert(data.message);
-                localStorage.removeItem('token');
-                localStorage.removeItem('user');
-                setUser(null);
-
-                // Sync logout to native if in WebView
-                if (window.ReactNativeWebView) {
-                    window.ReactNativeWebView.postMessage(JSON.stringify({
-                        type: 'AUTH_SYNC',
-                        token: null,
-                        user: null
-                    }));
-                }
-
-                window.location.href = '/login?reason=concurrent_login';
+                logout();
             });
         }
 
         return () => {
             if (newSocket) newSocket.disconnect();
         };
-    }, [user]);
-
-    useEffect(() => {
-        // Sync with Native Storage if in WebView
-        if (window.ReactNativeWebView) {
-            const token = localStorage.getItem('token');
-            const user = localStorage.getItem('user');
-            if (token) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({
-                    type: 'AUTH_SYNC',
-                    token: token,
-                    user: user ? JSON.parse(user) : null
-                }));
-            }
-        }
     }, [user]);
 
     const login = async (emp_no, password, wifi_ssid = null, face_descriptor = null) => {
@@ -89,36 +108,25 @@ export const AuthProvider = ({ children }) => {
     const logout = async (statusUpdates = null) => {
         try {
             if (socket) socket.disconnect();
-
-            // Record logout attendance
             if (user && user.role === 'employee') {
                 const response = await api.post('/auth/logout', { statusUpdates });
                 const duration = response.data?.duration;
-                if (duration) {
-                    alert(`Logout successful!\nYou were logged in for: ${duration.formatted}`);
-                } else {
-                    alert('Logged out successfully');
-                }
+                if (duration) alert(`Logout successful!\nYou were logged in for: ${duration.formatted}`);
+                else alert('Logged out successfully');
             } else {
                 alert('Logged out successfully');
             }
         } catch (error) {
-            console.error('Logout attendance recording failed:', error);
+            console.error('Logout failed:', error);
             alert('Logged out successfully');
         } finally {
             localStorage.removeItem('token');
             localStorage.removeItem('user');
             setUser(null);
-
-            // Sync logout to native if in WebView
+            
             if (window.ReactNativeWebView) {
-                window.ReactNativeWebView.postMessage(JSON.stringify({
-                    type: 'AUTH_SYNC',
-                    token: null,
-                    user: null
-                }));
+                window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'AUTH_SYNC', token: null, user: null }));
             }
-
             window.location.href = '/login';
         }
     };
@@ -130,7 +138,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     return (
-        <AuthContext.Provider value={{ user, loading, login, logout, updateUser }}>
+        <AuthContext.Provider value={{ user, loading, isOnWifi, login, logout, updateUser }}>
             {children}
         </AuthContext.Provider>
     );

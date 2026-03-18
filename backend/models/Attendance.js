@@ -35,7 +35,23 @@ const attendanceSchema = new mongoose.Schema({
     device_info: {
         type: String,
         default: null
-    }
+    },
+    total_duration_ms: {
+        type: Number,
+        default: 0
+    },
+    last_ping: {
+        type: Date,
+        default: null
+    },
+    is_on_wifi: {
+        type: Boolean,
+        default: true
+    },
+    wifi_history: [{
+        status: String,
+        timestamp: Date
+    }]
 }, { timestamps: true });
 
 // Index for faster lookups

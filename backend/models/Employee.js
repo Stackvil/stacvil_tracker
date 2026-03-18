@@ -57,6 +57,15 @@ const employeeSchema = new mongoose.Schema({
     is_wifi_login_enabled: {
         type: Boolean,
         default: true
+    },
+    presence_status: {
+        type: String,
+        enum: ['online', 'offline'],
+        default: 'offline'
+    },
+    last_seen: {
+        type: Date,
+        default: null
     }
 });
 

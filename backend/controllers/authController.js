@@ -68,7 +68,6 @@ const loginEmployee = async (req, res) => {
             return res.status(401).json({ message: 'Invalid credentials' });
         }
 
-        // --- WiFi / Network Restriction Check ---
         if (employee.role !== 'admin' && employee.is_wifi_login_enabled) {
             try {
                 const settings = await Settings.findOne();
@@ -77,7 +76,7 @@ const loginEmployee = async (req, res) => {
 
                 const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip || '').split(',')[0].trim();
 
-                if (wifi_ssid) {
+                if (wifi_ssid && wifi_ssid !== 'NATIVE_BOUND') {
                     if (allowedSsid && allowedSsid !== 'Your_Office_WiFi_Name') {
                         if (wifi_ssid.trim() !== allowedSsid.trim()) {
                             return res.status(403).json({
@@ -87,6 +86,7 @@ const loginEmployee = async (req, res) => {
                         }
                     }
                 } else if (allowedIp && allowedIp.trim() !== '') {
+                    // This handles browsers without SSID info AND Native Apps using NATIVE_BOUND fallback
                     if (clientIp !== allowedIp.trim()) {
                         return res.status(403).json({
                             message: 'Login Denied: Unauthorized network. Mobile browser users must be on Office WiFi.',

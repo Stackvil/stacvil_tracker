@@ -1,100 +1,94 @@
 import React, { useState, useEffect, useRef, useContext } from 'react';
 import api from '../services/api';
-import { Clock } from 'lucide-react';
+import { Clock, WifiOff } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 
 const LiveClock = () => {
-    const { user, logout } = useContext(AuthContext);
+    const { user, logout, isOnWifi } = useContext(AuthContext);
     const [currentTime, setCurrentTime] = useState(null);
-    const [workDuration, setWorkDuration] = useState(0); // in seconds
+    const [workDuration, setWorkDuration] = useState(0); 
     const syncRef = useRef({
         serverStartTime: null,
         performanceStartTime: null,
-        workDurationStart: 0
+        workDurationStart: 0,
+        lastUpdatePerformance: null
     });
 
-    useEffect(() => {
-        const syncTime = async () => {
-            try {
-                // 1. Fetch Time
-                const timeRes = await api.get('/utils/time');
-                const serverTime = new Date(timeRes.data.serverTime);
+    const isEmployee = user?.role?.toLowerCase() === 'employee';
 
-                syncRef.current.serverStartTime = serverTime.getTime();
-                syncRef.current.performanceStartTime = performance.now();
+    const syncTime = async () => {
+        try {
+            const timeRes = await api.get('/utils/time');
+            const serverTime = new Date(timeRes.data.serverTime);
 
-                // 2. Fetch Duration (Only for employees, or if endpoint works)
-                const role = user?.role?.toLowerCase();
-                if (role === 'employee') {
-                    try {
-                        const durationRes = await api.get('/attendance/duration');
-                        syncRef.current.workDurationStart = (durationRes.data.totalMilliseconds || 0) / 1000;
-                    } catch (durErr) {
-                        console.warn('Could not fetch work duration:', durErr.message);
-                    }
-                }
+            syncRef.current.serverStartTime = serverTime.getTime();
+            syncRef.current.performanceStartTime = performance.now();
+            syncRef.current.lastUpdatePerformance = performance.now();
 
-                updateClock();
-            } catch (error) {
-                console.error('Failed to sync time:', error);
-                syncRef.current.serverStartTime = Date.now();
-                syncRef.current.performanceStartTime = performance.now();
-                updateClock(); // Still start the clock
+            if (isEmployee) {
+                try {
+                    const durationRes = await api.get('/attendance/duration');
+                    const serverDurationSec = (durationRes.data.totalMilliseconds || 0) / 1000;
+                    syncRef.current.workDurationStart = serverDurationSec;
+                    setWorkDuration(serverDurationSec);
+                } catch (durErr) {}
             }
-        };
+        } catch (error) {
+            syncRef.current.serverStartTime = Date.now();
+            syncRef.current.performanceStartTime = performance.now();
+            syncRef.current.lastUpdatePerformance = performance.now();
+        }
+    };
+
+    useEffect(() => {
+        syncTime();
+        // Periodic full sync every 2 minutes
+        const syncInterval = setInterval(syncTime, 120000);
 
         const updateClock = () => {
-            const elapsedSinceSync = (performance.now() - syncRef.current.performanceStartTime) / 1000; // seconds
+            const nowPerf = performance.now();
+            const elapsedSinceSync = (nowPerf - syncRef.current.performanceStartTime) / 1000; 
+            const deltaSec = (nowPerf - (syncRef.current.lastUpdatePerformance || nowPerf)) / 1000;
+            syncRef.current.lastUpdatePerformance = nowPerf;
 
             // 1. Update Clock
-            let nowInIST = null;
             if (syncRef.current.serverStartTime !== null) {
-                nowInIST = new Date(syncRef.current.serverStartTime + (elapsedSinceSync * 1000));
+                const nowInIST = new Date(syncRef.current.serverStartTime + (elapsedSinceSync * 1000));
                 const options = {
                     timeZone: 'Asia/Kolkata',
                     hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: true
                 };
                 setCurrentTime(new Intl.DateTimeFormat('en-IN', options).format(nowInIST));
+
+                // 2. Auto-Logout Check (7 PM IST)
+                if (isEmployee) {
+                    const dateStr = nowInIST.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+                    const sevenPMIST = new Date(`${dateStr}T19:00:00+05:30`);
+                    if (nowInIST >= sevenPMIST && !user.isRestricted && !syncRef.current.loggedOut) {
+                        syncRef.current.loggedOut = true;
+                        logout();
+                    }
+                }
             }
 
-            // 2. Update Work Duration & Handle Auto-Logout
-            if (nowInIST) {
-                // Calculate 7 PM IST for today robustly
-                const year = nowInIST.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
-                const sevenPMIST = new Date(`${year}T19:00:00+05:30`);
-
-                if (nowInIST >= sevenPMIST) {
-                    // Logic for employees
-                    if (user?.role?.toLowerCase() === 'employee' && !user.isRestricted) {
-                        // Force logout if not already in restricted mode
-                        // We use a small delay or flag to avoid race conditions
-                        if (!syncRef.current.loggedOut) {
-                            syncRef.current.loggedOut = true;
-                            console.log('Office hours ended. Triggering auto-logout...');
-                            logout();
-                        }
+            // 3. Update Work Duration
+            if (isEmployee) {
+                setWorkDuration(prev => {
+                    // Only increment if on Wifi and not restricted
+                    if (isOnWifi && !user?.isRestricted) {
+                        return prev + deltaSec;
                     }
-
-                    // Calculate how many seconds from sync until 7 PM
-                    const msUntilSevenPM = sevenPMIST.getTime() - syncRef.current.serverStartTime;
-                    const elapsedUntilSevenPM = Math.max(0, msUntilSevenPM / 1000);
-
-                    setWorkDuration(syncRef.current.workDurationStart + elapsedUntilSevenPM);
-                } else {
-                    const currentDuration = syncRef.current.workDurationStart + elapsedSinceSync;
-                    setWorkDuration(currentDuration);
-                }
-            } else {
-                const currentDuration = syncRef.current.workDurationStart + elapsedSinceSync;
-                setWorkDuration(currentDuration);
+                    return prev;
+                });
             }
         };
 
-        syncTime();
-        const interval = setInterval(updateClock, 1000);
-
-        return () => clearInterval(interval);
-    }, [user?.role]);
+        const clockInterval = setInterval(updateClock, 1000);
+        return () => {
+            clearInterval(clockInterval);
+            clearInterval(syncInterval);
+        };
+    }, [user?.role, isOnWifi, user?.isRestricted]);
 
     const formatDuration = (totalSeconds) => {
         const hours = Math.floor(totalSeconds / 3600);
@@ -105,32 +99,30 @@ const LiveClock = () => {
 
     if (!currentTime) return null;
 
-    const role = user?.role?.toLowerCase();
-    const isEmployee = role === 'employee';
-
     return (
         <div className="flex gap-1.5 sm:gap-4 flex-shrink min-w-0">
-            {/* Live Clock */}
             <div className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-2 bg-indigo-50 border border-indigo-100 rounded-xl shadow-sm min-w-0">
                 <div className="hidden sm:flex items-center justify-center w-8 h-8 bg-indigo-600 rounded-lg shadow-inner flex-shrink-0">
                     <Clock className="w-4 h-4 text-white animate-pulse" />
                 </div>
                 <div className="flex flex-col min-w-0">
                     <span className="text-[8px] sm:text-[10px] font-bold text-indigo-400 uppercase tracking-widest leading-none mb-0.5 sm:mb-1 truncate">IST Time</span>
-                    <span className="text-sm sm:text-lg font-black text-indigo-900 font-mono leading-none tracking-tighter truncate">
-                        {currentTime}
-                    </span>
+                    <span className="text-sm sm:text-lg font-black text-indigo-900 font-mono leading-none tracking-tighter truncate">{currentTime}</span>
                 </div>
             </div>
 
-            {/* Work Duration - Only show for employees */}
             {isEmployee && (
-                <div className="flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-2 bg-green-50 border border-green-200 rounded-xl shadow-md shadow-green-100/50 min-w-0">
+                <div className={`flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md border min-w-0 transition-colors ${isOnWifi && !user?.isRestricted ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                     <div className="flex flex-col min-w-0">
-                        <span className="text-[8px] sm:text-[10px] font-bold text-green-600 uppercase tracking-widest leading-none mb-0.5 sm:mb-1 truncate">Work Duration</span>
-                        <span className="text-sm sm:text-lg font-black text-green-900 font-mono leading-none tracking-tighter truncate">
-                            {formatDuration(workDuration)}
+                        <span className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest leading-none mb-0.5 sm:mb-1 truncate ${isOnWifi && !user?.isRestricted ? 'text-green-600' : 'text-red-500'}`}>
+                            {isOnWifi ? (user?.isRestricted ? 'Restricted' : 'Work Duration') : 'Disconnected'}
                         </span>
+                        <div className="flex items-center gap-1.5">
+                            <span className={`text-sm sm:text-lg font-black font-mono leading-none tracking-tighter truncate ${isOnWifi && !user?.isRestricted ? 'text-green-900' : 'text-red-900'}`}>
+                                {formatDuration(workDuration)}
+                            </span>
+                            {!isOnWifi && <WifiOff className="w-3 h-3 sm:w-4 sm:h-4 text-red-500 animate-pulse" />}
+                        </div>
                     </div>
                 </div>
             )}

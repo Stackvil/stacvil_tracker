@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { io } from 'socket.io-client';
 import api from '../services/api';
 import { Link } from 'react-router-dom';
 import {
@@ -9,7 +10,7 @@ import {
 import { Bar as BarComponent, Pie as PieComponent } from 'react-chartjs-2';
 import {
     Users, CheckCircle, Clock, TrendingUp, ArrowRight,
-    CheckCircle2, XCircle, AlertCircle, ClipboardList, LogOut
+    CheckCircle2, XCircle, AlertCircle, ClipboardList, LogOut, Wifi, WifiOff
 } from 'lucide-react';
 
 ChartJS.register(
@@ -41,6 +42,22 @@ const AdminDashboard = () => {
     useEffect(() => {
         fetchAll();
         const interval = setInterval(fetchAll, 30000); // auto-refresh every 30s
+        
+        // Listen for real-time presence updates
+        const token = localStorage.getItem('token');
+        if (token) {
+            const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+            socket.on('employeeStatusUpdate', ({ employeeId, status }) => {
+                setTodayReport(prev => prev.map(emp => 
+                    emp.emp_no === employeeId ? { ...emp, presence_status: status } : emp
+                ));
+            });
+            return () => {
+                socket.disconnect();
+                clearInterval(interval);
+            };
+        }
+        
         return () => clearInterval(interval);
     }, []);
 
@@ -153,6 +170,10 @@ const AdminDashboard = () => {
                 list = todayReport.filter(r => r.status === 'completed');
                 title = "Completed Tasks Today";
                 break;
+            case 'Online':
+                list = todayReport.filter(r => r.presence_status === 'online');
+                title = "Online Employees";
+                break;
             default:
                 break;
         }
@@ -194,6 +215,7 @@ const AdminDashboard = () => {
 
                 {/* Mini summary pills */}
                 <div className="flex flex-wrap gap-3 mb-5">
+                    <Pill color="bg-emerald-50 text-emerald-700 border-emerald-200 cursor-pointer hover:bg-emerald-100" label={`${todayReport.filter(r => r.presence_status === 'online').length} Online`} onClick={() => handlePillClick('Online')} />
                     <Pill color="bg-green-50 text-green-700 border-green-200 cursor-pointer hover:bg-green-100" label={`${presentToday} Present`} onClick={() => handlePillClick('Present')} />
                     <Pill color="bg-amber-50 text-amber-700 border-amber-200 cursor-pointer hover:bg-amber-100" label={`${leavesToday.length} On Leave`} onClick={() => handlePillClick('On Leave')} />
                     <Pill color="bg-red-50 text-red-600 border-red-200 cursor-pointer hover:bg-red-100" label={`${absentTodayCount} Absent`} onClick={() => handlePillClick('Absent')} />
@@ -461,7 +483,13 @@ const AdminDashboard = () => {
                                                     </div>
                                                 )}
                                                 <div className="flex-1 min-w-0">
-                                                    <p className="font-bold text-gray-800 truncate text-sm">{emp.full_name || emp.name}</p>
+                                                    <div className="flex items-center gap-1.5">
+                                                        <p className="font-bold text-gray-800 truncate text-sm">{emp.full_name || emp.name}</p>
+                                                        <div className={`w-2 h-2 rounded-full shadow-sm shrink-0 ${emp.presence_status === 'online' ? 'bg-green-500 animate-pulse' : 'bg-gray-300'}`} />
+                                                        {emp.login_time !== 'N/A' && emp.logout_time === 'N/A' && (
+                                                            emp.is_on_wifi ? <Wifi className="w-3 h-3 text-green-500" /> : <WifiOff className="w-3 h-3 text-red-500 animate-bounce" />
+                                                        )}
+                                                    </div>
                                                     <p className="text-xs text-gray-500 font-medium">#{emp.emp_no}</p>
                                                 </div>
                                                 <div className="text-right shrink-0 flex items-center gap-3">

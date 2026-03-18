@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, View, StatusBar, ActivityIndicator, Text } from 'react-native';
+import { StyleSheet, View, StatusBar, ActivityIndicator, Text, Platform, PermissionsAndroid, BackHandler } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -9,36 +9,60 @@ export default function App() {
     const [initialToken, setInitialToken] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [initialUrl, setInitialUrl] = useState('https://track.stackvil.com/');
+    const [canGoBack, setCanGoBack] = useState(false);
 
+    // Initial Preparation: Permissions and persistence
     useEffect(() => {
-        const loadToken = async () => {
+        const prepare = async () => {
             try {
+                // 1. Native Permissions (Non-blocking)
+                if (Platform.OS === 'android') {
+                    PermissionsAndroid.requestMultiple([
+                        PermissionsAndroid.PERMISSIONS.CAMERA,
+                        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
+                        PermissionsAndroid.PERMISSIONS.RECORD_AUDIO,
+                    ]).catch(e => console.warn('Permission request error:', e));
+                }
+
+                // 2. Auth Persistence Sync
                 const token = await AsyncStorage.getItem('token');
                 const user = await AsyncStorage.getItem('user');
                 setInitialToken({ token, user });
 
                 if (token && user) {
                     const parsedUser = JSON.parse(user);
-                    if (parsedUser.role === 'admin') {
-                        setInitialUrl('https://track.stackvil.com/admin');
-                    } else if (parsedUser.isRestricted) {
-                        setInitialUrl('https://track.stackvil.com/restricted-access');
-                    } else {
-                        setInitialUrl('https://track.stackvil.com/dashboard');
-                    }
+                    if (parsedUser.role === 'admin') setInitialUrl('https://track.stackvil.com/admin');
+                    else if (parsedUser.isRestricted) setInitialUrl('https://track.stackvil.com/restricted-access');
+                    else setInitialUrl('https://track.stackvil.com/dashboard');
                 }
             } catch (e) {
-                console.error('Failed to load token', e);
+                console.error('Failed to prepare app', e);
             } finally {
                 setIsLoading(false);
             }
         };
-        loadToken();
+        prepare();
     }, []);
+
+    // Handle Android Back Button
+    useEffect(() => {
+        const backAction = () => {
+            if (canGoBack && webViewRef.current) {
+                webViewRef.current.goBack();
+                return true;
+            }
+            return false;
+        };
+
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', backAction);
+        return () => backHandler.remove();
+    }, [canGoBack]);
 
     const handleMessage = async (event) => {
         try {
             const data = JSON.parse(event.nativeEvent.data);
+            
+            // 1. Authentication Sync (Web -> Native)
             if (data.type === 'AUTH_SYNC') {
                 if (data.token) {
                     await AsyncStorage.setItem('token', data.token);
@@ -48,28 +72,38 @@ export default function App() {
                     await AsyncStorage.removeItem('user');
                 }
             }
+
+            // 2. WiFi Detection (Web -> Native Request)
+            if (data.type === 'GET_WIFI_SSID') {
+                // In a pure Expo/RN project without native WiFi libraries, 
+                // we return a signal that native detection is active (allows backend to fallback to IP)
+                webViewRef.current.postMessage(JSON.stringify({ 
+                    type: 'WIFI_SSID', 
+                    ssid: 'NATIVE_BOUND', // Marker for backend to know it's the mobile app
+                    status: 'active'
+                }));
+            }
         } catch (e) {
-            console.error('Error handling message from WebView', e);
+            console.error('WebView Bridge Error:', e);
         }
     };
 
+    // Script to ensure the Web localstorage matches Native AsyncStorage on load
     const injectedJS = `
         (function() {
             try {
-                const nativeToken = ${initialToken?.token ? \`'\${initialToken.token}'\` : 'null'};
-                const nativeUser = ${initialToken?.user ? \`'\${initialToken.user.replace(/'/g, "\\\\'")}'\` : 'null'};
+                const nativeToken = ${initialToken?.token ? `'${initialToken.token}'` : 'null'};
+                const nativeUser = ${initialToken?.user ? `'${initialToken.user.replace(/'/g, "\\'")}'` : 'null'};
                 
                 const webToken = window.localStorage.getItem('token');
                 
                 if (nativeToken && nativeToken !== webToken) {
                     window.localStorage.setItem('token', nativeToken);
                     window.localStorage.setItem('user', nativeUser);
-                    // Force the webview to reload itself so the production React app seamlessly 
-                    // sees the token when it mounts, completely bypassing initialization bugs.
                     window.location.reload();
                 }
             } catch (e) {
-                console.error('Injection failed', e);
+                console.error('Auth Injection Failed', e);
             }
         })();
         true;
@@ -80,7 +114,7 @@ export default function App() {
             <SafeAreaProvider>
                 <SafeAreaView style={styles.splashContainer}>
                     <ActivityIndicator size="large" color="#4f46e5" />
-                    <Text style={styles.splashText}>Checking session...</Text>
+                    <Text style={styles.splashText}>Stackvil Tracker Loading...</Text>
                 </SafeAreaView>
             </SafeAreaProvider>
         );
@@ -100,13 +134,25 @@ export default function App() {
                         startInLoadingState={true}
                         scalesPageToFit={true}
                         onMessage={handleMessage}
+                        onNavigationStateChange={(navState) => setCanGoBack(navState.canGoBack)}
                         injectedJavaScript={injectedJS}
-                        // Persistence Enhancements
+                        
+                        // Media & Permissions
+                        allowsInlineMediaPlayback={true}
+                        mediaPlaybackRequiresUserAction={false}
+                        originWhitelist={['*']}
+                        onPermissionRequest={(event) => {
+                            const { resources } = event.nativeEvent;
+                            if (resources.includes('VIDEO_CAPTURE') || resources.includes('AUDIO_CAPTURE')) {
+                                event.grant(resources);
+                            }
+                        }}
+                        
+                        // Performance & Caching
                         cacheEnabled={true}
                         cacheMode="LOAD_DEFAULT"
                         sharedCookiesEnabled={true}
                         thirdPartyCookiesEnabled={true}
-                        incognito={false}
                     />
                 </View>
             </SafeAreaView>
@@ -133,7 +179,9 @@ const styles = StyleSheet.create({
     },
     splashText: {
         marginTop: 16,
-        fontSize: 16,
-        color: '#6b7280',
+        fontSize: 14,
+        fontWeight: 'bold',
+        color: '#4f46e5',
+        letterSpacing: 1
     },
 });

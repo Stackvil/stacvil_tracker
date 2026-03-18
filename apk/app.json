@@ -8,11 +8,17 @@
     "scheme": "apk",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
-    "ios": {
-      "supportsTablet": true
-    },
     "android": {
       "package": "com.stackvil.tracker",
+      "permissions": [
+        "CAMERA",
+        "RECORD_AUDIO",
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION",
+        "ACCESS_WIFI_STATE",
+        "CHANGE_WIFI_STATE",
+        "INTERNET"
+      ],
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/Black Simple Eagle Logo (1).png",
@@ -21,6 +27,14 @@
       },
       "edgeToEdgeEnabled": true,
       "predictiveBackGestureEnabled": false
+    },
+    "ios": {
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSCameraUsageDescription": "Stackvil needs camera access for face recognition login and profile pictures.",
+        "NSMicrophoneUsageDescription": "Stackvil needs microphone access for video features.",
+        "NSLocationWhenInUseUsageDescription": "Stackvil needs location access to verify office presence."
+      }
     },
     "web": {
       "output": "static",
