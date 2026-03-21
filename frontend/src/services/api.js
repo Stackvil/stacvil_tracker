@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Always use relative /api path — same as production (https://track.stackvil.com/api/...)
+// Always use relative /api path — same as production (https://track.ethree.com/api/...)
 // In local dev, Vite proxy forwards /api/* → http://localhost:5000/api/*
 const API_URL = import.meta.env.VITE_API_URL || '/api';
 

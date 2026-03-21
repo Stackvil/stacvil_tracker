@@ -189,8 +189,8 @@ const DashboardLayout = () => {
             {/* Sidebar - Desktop */}
             <aside className="w-64 bg-white border-r border-gray-200 hidden md:flex flex-col">
                 <div className="p-6 h-20 flex items-center border-b border-gray-100">
-                    <img src="/logo.jpg" alt="StackVil" className="h-10 w-10 rounded-xl object-cover mr-3 shadow-sm" />
-                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">StackVil</span>
+                    <img src="/logo.jpg" alt="ETHREE" className="h-10 w-10 rounded-xl object-cover mr-3 shadow-sm" />
+                    <span className="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-600 to-purple-600">ETHREE</span>
                 </div>
 
                 <nav className="flex-1 p-4 space-y-2">
@@ -230,8 +230,8 @@ const DashboardLayout = () => {
                 {/* Header */}
                 <header className="h-16 md:h-20 bg-white border-b border-gray-200 flex items-center justify-between px-2 sm:px-4 md:px-6 sticky top-0 z-10 shadow-sm gap-2">
                     <div className="flex items-center md:hidden gap-1.5 flex-shrink-0">
-                        <img src="/logo.jpg" alt="StackVil" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg object-cover shadow-sm" />
-                        <span className="text-sm font-bold text-gray-800 hidden sm:block">StackVil</span>
+                        <img src="/logo.jpg" alt="ETHREE" className="h-7 w-7 sm:h-8 sm:w-8 rounded-lg object-cover shadow-sm" />
+                        <span className="text-sm font-bold text-gray-800 hidden sm:block">ETHREE</span>
                     </div>
                     <div className="hidden md:block flex-shrink-0">
                         <h2 className="text-xl font-bold text-gray-800">

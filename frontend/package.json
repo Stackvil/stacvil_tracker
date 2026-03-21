@@ -16,7 +16,7 @@
   },
   "build": {
     "appId": "com.stackvil.tracker",
-    "productName": "Stacvil Tracker",
+    "productName": "ETHREE Tracker",
     "directories": {
       "output": "dist-windows"
     },

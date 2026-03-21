@@ -12,7 +12,7 @@ export default function App() {
     const webViewRef = useRef(null);
     const [initialToken, setInitialToken] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
-    const [initialUrl, setInitialUrl] = useState('https://track.stackvil.com/');
+    const [initialUrl, setInitialUrl] = useState('https://track.ethree.com/');
     const [canGoBack, setCanGoBack] = useState(false);
     const [faceCaptureVisible, setFaceCaptureVisible] = useState(false);
     const [faceCaptureMode, setFaceCaptureMode] = useState('enroll'); // 'enroll' | 'verify'
@@ -37,9 +37,9 @@ export default function App() {
 
                 if (token && user) {
                     const parsedUser = JSON.parse(user);
-                    if (parsedUser.role === 'admin') setInitialUrl('https://track.stackvil.com/admin');
-                    else if (parsedUser.isRestricted) setInitialUrl('https://track.stackvil.com/restricted-access');
-                    else setInitialUrl('https://track.stackvil.com/dashboard');
+                    if (parsedUser.role === 'admin') setInitialUrl('https://track.ethree.com/admin');
+                    else if (parsedUser.isRestricted) setInitialUrl('https://track.ethree.com/restricted-access');
+                    else setInitialUrl('https://track.ethree.com/dashboard');
                 }
             } catch (e) {
                 console.error('Failed to prepare app', e);
@@ -146,7 +146,7 @@ export default function App() {
             <SafeAreaProvider>
                 <SafeAreaView style={styles.splashContainer}>
                     <ActivityIndicator size="large" color="#4f46e5" />
-                    <Text style={styles.splashText}>Stackvil Tracker Loading...</Text>
+                    <Text style={styles.splashText}>ETHREE Tracker Loading...</Text>
                 </SafeAreaView>
             </SafeAreaProvider>
         );

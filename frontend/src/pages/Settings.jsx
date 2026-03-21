@@ -95,7 +95,7 @@ const Settings = () => {
                                 value={settings.office_wifi_ssid}
                                 onChange={(e) => setSettings({ ...settings, office_wifi_ssid: e.target.value })}
                                 className="w-full px-5 py-4 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-indigo-500 outline-none transition-all placeholder:text-gray-300"
-                                placeholder="e.g. EFOUR_OFFICE_5G"
+                                placeholder="e.g. ETHREE_OFFICE_5G"
                             />
                             <p className="text-[10px] text-gray-400 font-medium px-1">
                                 Matching the local Wi-Fi name. Only works for users on the native application.

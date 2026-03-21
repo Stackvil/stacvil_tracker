@@ -28,7 +28,7 @@ app.use(cors({
     origin: [
         'http://localhost:5173',
         'http://localhost:5174',
-        'https://track.stackvil.com',
+        'https://track.ethree.com',
         /\.vercel\.app$/
     ],
     credentials: true
@@ -112,7 +112,7 @@ const io = new Server(server, {
         origin: [
             'http://localhost:5173',
             'http://localhost:5174',
-            'https://track.stackvil.com',
+            'https://track.ethree.com',
             /\.vercel\.app$/
         ],
         credentials: true
