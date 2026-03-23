@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
     StyleSheet, View, StatusBar, ActivityIndicator, Text,
-    Platform, PermissionsAndroid, BackHandler
+    Platform, PermissionsAndroid, BackHandler, AppState
 } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { SafeAreaProvider, SafeAreaView } from 'react-native-safe-area-context';
@@ -17,7 +17,55 @@ export default function App() {
     const [canGoBack, setCanGoBack] = useState(false);
     const [faceCaptureVisible, setFaceCaptureVisible] = useState(false);
     const [faceCaptureMode, setFaceCaptureMode] = useState('enroll'); // 'enroll' | 'verify'
+    const appState = useRef(AppState.currentState);
 
+    // NATIVE BACKGROUND HEARTBEAT
+    // This runs on the native JS thread, which survives longer than the WebView JS thread when backgrounded (in recents)
+    useEffect(() => {
+        const runHeartbeat = async () => {
+            try {
+                const token = await AsyncStorage.getItem('token');
+                const userStr = await AsyncStorage.getItem('user');
+                
+                if (!token || !userStr) return;
+                const user = JSON.parse(userStr);
+                if (user.role !== 'employee') return;
+
+                // Send native heartbeat
+                // Note: We use NATIVE_BOUND to tell backend to check IP
+                await fetch(`${BASE_URL}/api/utils/heartbeat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({ wifi_ssid: 'NATIVE_BOUND' })
+                });
+                
+                console.log('[NATIVE-HEARTBEAT] Sent successfully');
+            } catch (error) {
+                console.log('[NATIVE-HEARTBEAT-ERROR]', error.message);
+            }
+        };
+
+        // Run immediately on mount
+        runHeartbeat();
+
+        // Run every 20 seconds (slightly slower than web to avoid conflicts)
+        const interval = setInterval(runHeartbeat, 20000);
+
+        const subscription = AppState.addEventListener('change', nextAppState => {
+            appState.current = nextAppState;
+            if (appState.current === 'active') {
+                runHeartbeat(); // Immediate sync on return
+            }
+        });
+
+        return () => {
+            clearInterval(interval);
+            subscription.remove();
+        };
+    }, []);
     // Initial Preparation: Permissions and persistence
     useEffect(() => {
         const prepare = async () => {

@@ -49,8 +49,8 @@ const heartbeat = async (req, res) => {
             }
 
             // Accumulate duration only if on WiFi
-            // Interval constraint (e.g., 15s/20s) to guard against device sleep jumps
-            if (is_on_wifi && diffMs > 0 && diffMs <= 25000) {
+            // Interval constraint (allow up to 35s) to guard against device sleep jumps
+            if (is_on_wifi && diffMs > 0 && diffMs <= 35000) {
                 attendance.total_duration_ms = (attendance.total_duration_ms || 0) + diffMs;
             }
 
