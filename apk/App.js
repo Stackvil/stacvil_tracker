@@ -10,7 +10,7 @@ import NativeFaceCapture from './NativeFaceCapture';
 
 export default function App() {
     const webViewRef = useRef(null);
-    const BASE_URL = 'https://stacvil-tracker.vercel.app';
+    const BASE_URL = 'https://stackvil-tracker.vercel.app';
     const [initialToken, setInitialToken] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [initialUrl, setInitialUrl] = useState(`${BASE_URL}/`);

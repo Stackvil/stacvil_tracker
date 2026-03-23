@@ -137,7 +137,7 @@ const POS = () => {
 
             {/* Print Header (Only visible when printing) */}
             <div className="hidden print:block fixed inset-0 bg-white p-8">
-                <h1 className="text-2xl font-bold mb-4">STACVIL TRACKER - INVOICE</h1>
+                <h1 className="text-2xl font-bold mb-4">STACKVIL TRACKER - INVOICE</h1>
                 <p className="text-sm text-gray-500 mb-8">Date: {new Date().toLocaleDateString()}</p>
                 <table className="w-full mb-8">
                     <thead>

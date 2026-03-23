@@ -1,5 +1,5 @@
 {
-    "name": "stacvil-tracker",
+    "name": "stackvil-tracker",
     "version": "1.0.0",
     "description": "Employee Work Monitoring Web Application",
     "main": "backend/server.js",
