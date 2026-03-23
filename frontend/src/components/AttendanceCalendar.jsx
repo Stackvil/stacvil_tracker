@@ -13,13 +13,6 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
 
-    // Calendar logic
-    const monthStart = startOfMonth(currentMonth);
-    const monthEnd = endOfMonth(monthStart);
-    const startDate = startOfWeek(monthStart);
-    const endDate = endOfWeek(monthEnd);
-    const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
-
     // Helper to parse YYYY-MM-DD as local date (not UTC)
     const parseLocalDate = (dateStr) => {
         if (!dateStr) return new Date();
@@ -27,16 +20,48 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
         return new Date(year, month - 1, day);
     };
 
+    // OPTIMIZATION: Memoize grouped data for O(1) daily lookups
+    const groupedData = React.useMemo(() => {
+        const groups = { attendance: {}, tasks: {}, leaves: {} };
+        
+        attendanceHistory.forEach(record => {
+            if (!groups.attendance[record.date]) groups.attendance[record.date] = [];
+            groups.attendance[record.date].push(record);
+        });
+        
+        tasks.forEach(task => {
+            if (!groups.tasks[task.assigned_date]) groups.tasks[task.assigned_date] = [];
+            groups.tasks[task.assigned_date].push(task);
+        });
+
+        (leaves || []).forEach(l => {
+            if (l.status !== 'approved') return;
+            const start = l.start_date;
+            const end = l.type === 'multiple' ? l.end_date : start;
+            
+            // For simplicity, we just mark the start/end and logic in getLeavesForDay
+            // But for O(1) we should populate all days in range.
+            // Since leaves are few, we can just store the list.
+        });
+
+        return groups;
+    }, [attendanceHistory, tasks, leaves]);
+
+    // Calendar logic
+    const monthStart = startOfMonth(currentMonth);
+    const monthEnd = endOfMonth(monthStart);
+    const startDate = startOfWeek(monthStart);
+    const endDate = endOfWeek(monthEnd);
+    const calendarDays = eachDayOfInterval({ start: startDate, end: endDate });
+
     const getAttendanceForDay = (day) => {
-        return attendanceHistory.filter(record =>
-            isSameDay(parseLocalDate(record.date), day)
-        );
+        const dateStr = format(day, 'yyyy-MM-dd');
+        return groupedData.attendance[dateStr] || [];
     };
 
     const getTasksForDay = (day) => {
-        return tasks.filter(task =>
-            isSameDay(parseLocalDate(task.assigned_date), day)
-        );
+        const dateStr = format(day, 'yyyy-MM-dd');
+        return groupedData.tasks[dateStr] || [];
     };
 
     const getLeavesForDay = (day) => {
@@ -51,9 +76,70 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
     const dayAttendance = getAttendanceForDay(selectedDate);
     const dayTasks = getTasksForDay(selectedDate);
 
+    // Optimized individual day content
+    const DayCell = React.memo(({ day, isCurrentMonth, isSelected }) => {
+        const attendanceRecords = getAttendanceForDay(day);
+        const tasksForDay = getTasksForDay(day);
+        const leavesForDay = getLeavesForDay(day);
+
+        // Duration calculation
+        let totalMs = 0;
+        if (attendanceRecords.length > 0) {
+            const now = new Date();
+            const isDayToday = isSameDay(now, day);
+
+            const intervals = attendanceRecords.map(r => ({
+                start: new Date(r.login_time).getTime(),
+                end: r.logout_time ? new Date(r.logout_time).getTime() :
+                    (isDayToday ? now.getTime() : new Date(r.login_time).getTime())
+            })).filter(i => !isNaN(i.start) && !isNaN(i.end));
+
+            if (intervals.length > 0) {
+                intervals.sort((a, b) => a.start - b.start);
+                const merged = [];
+                let current = intervals[0];
+                for (let i = 1; i < intervals.length; i++) {
+                    const next = intervals[i];
+                    if (next.start <= current.end) {
+                        current.end = Math.max(current.end, next.end);
+                    } else {
+                        merged.push(current);
+                        current = next;
+                    }
+                }
+                merged.push(current);
+                totalMs = merged.reduce((acc, i) => acc + (i.end - i.start), 0);
+            }
+        }
+
+        const hours = Math.floor(totalMs / 3600000);
+        const minutes = Math.floor((totalMs % 3600000) / 60000);
+        const durationString = totalMs > 0 ? `${hours}h ${minutes}m` : null;
+        const isTodayDay = isSameDay(day, new Date());
+        const isHalfDay = totalMs > 0 && totalMs < 5 * 3600000;
+
+        return (
+            <div className="w-full h-full flex flex-col items-center justify-center gap-1">
+                <span className={`text-sm font-medium ${isSelected ? 'text-white' : isTodayDay ? 'text-indigo-600' : 'text-gray-700'}`}>
+                    {format(day, 'd')}
+                </span>
+                <div className="flex gap-1">
+                    {leavesForDay.length > 0 && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-300' : 'bg-amber-500'}`} />}
+                    {attendanceRecords.length > 0 && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-300' : 'bg-green-500'}`} />}
+                    {tasksForDay.length > 0 && <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-300' : 'bg-purple-500'}`} />}
+                </div>
+                {durationString && (
+                    <div className="flex flex-col items-center leading-none">
+                        <span className={`text-[9px] font-bold ${isSelected ? 'text-indigo-200' : 'text-gray-400'}`}>{durationString}</span>
+                        {isHalfDay && <span className={`text-[7px] font-black uppercase tracking-tighter ${isSelected ? 'text-white' : 'text-amber-600'}`}>Half Day</span>}
+                    </div>
+                )}
+            </div>
+        );
+    });
+
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-            {/* Calendar View */}
             <div className="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-4 border-b border-gray-100 flex items-center justify-between">
                     <h3 className="font-bold text-gray-800 flex items-center gap-2">
@@ -61,115 +147,20 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
                         {format(currentMonth, 'MMMM yyyy')}
                     </h3>
                     <div className="flex gap-1">
-                        <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-2 hover:bg-gray-100 rounded-lg transition-all">
-                            <ChevronLeft className="w-5 h-5" />
-                        </button>
-                        <button onClick={() => setCurrentMonth(new Date())} className="px-3 text-sm font-semibold hover:bg-gray-100 rounded-lg transition-all">
-                            Today
-                        </button>
-                        <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2 hover:bg-gray-100 rounded-lg transition-all">
-                            <ChevronRight className="w-5 h-5" />
-                        </button>
+                        <button onClick={() => setCurrentMonth(subMonths(currentMonth, 1))} className="p-2 hover:bg-gray-100 rounded-lg transition-all"><ChevronLeft className="w-5 h-5" /></button>
+                        <button onClick={() => setCurrentMonth(new Date())} className="px-3 text-sm font-semibold hover:bg-gray-100 rounded-lg transition-all">Today</button>
+                        <button onClick={() => setCurrentMonth(addMonths(currentMonth, 1))} className="p-2 hover:bg-gray-100 rounded-lg transition-all"><ChevronRight className="w-5 h-5" /></button>
                     </div>
                 </div>
 
                 <div className="p-4">
                     <div className="grid grid-cols-7 mb-2">
                         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
-                            <div key={day} className="text-center text-xs font-bold text-gray-400 uppercase py-2">
-                                {day}
-                            </div>
+                            <div key={day} className="text-center text-xs font-bold text-gray-400 uppercase py-2">{day}</div>
                         ))}
                     </div>
                     <div className="grid grid-cols-7 gap-1">
                         {calendarDays.map((day, idx) => {
-                            const getDayContent = (day) => {
-                                const attendanceRecords = getAttendanceForDay(day);
-                                const dayTasks = getTasksForDay(day);
-                                const dayLeaves = getLeavesForDay(day);
-
-                                // Calculate total duration for the day using interval merging
-                                let totalMs = 0;
-                                if (attendanceRecords.length > 0) {
-                                    const now = new Date();
-                                    const isDayToday = isSameDay(now, day);
-
-                                    const intervals = attendanceRecords.map(r => ({
-                                        start: new Date(r.login_time).getTime(),
-                                        end: r.logout_time ? new Date(r.logout_time).getTime() :
-                                            (isDayToday ? now.getTime() : new Date(r.login_time).getTime())
-                                    })).filter(i => !isNaN(i.start) && !isNaN(i.end));
-
-                                    if (intervals.length > 0) {
-                                        intervals.sort((a, b) => a.start - b.start);
-                                        const merged = [];
-                                        let current = intervals[0];
-
-                                        for (let i = 1; i < intervals.length; i++) {
-                                            const next = intervals[i];
-                                            if (next.start <= current.end) {
-                                                current.end = Math.max(current.end, next.end);
-                                            } else {
-                                                merged.push(current);
-                                                current = next;
-                                            }
-                                        }
-                                        merged.push(current);
-                                        totalMs = merged.reduce((acc, i) => acc + (i.end - i.start), 0);
-                                    }
-                                }
-
-                                const hours = Math.floor(totalMs / 3600000);
-                                const minutes = Math.floor((totalMs % 3600000) / 60000);
-                                const durationString = totalMs > 0 ? `${hours}h ${minutes}m` : null;
-
-                                const isTodayDay = isSameDay(day, new Date()); // Renamed to avoid conflict with isToday from date-fns
-                                const isSelected = isSameDay(day, selectedDate);
-
-                                const isHalfDay = totalMs > 0 && totalMs < 5 * 3600000;
-
-                                return (
-                                    <div className="w-full h-full flex flex-col items-center justify-center gap-1">
-                                        <span className={`text-sm font-medium ${isSelected ? 'text-white' :
-                                            isTodayDay ? 'text-indigo-600' : 'text-gray-700'
-                                            }`}>
-                                            {format(day, 'd')}
-                                        </span>
-
-                                        <div className="flex gap-1">
-                                            {dayLeaves.length > 0 && (
-                                                <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-300' : 'bg-amber-500'
-                                                    }`} />
-                                            )}
-                                            {attendanceRecords.length > 0 && (
-                                                <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-300' : 'bg-green-500'
-                                                    }`} />
-                                            )}
-                                            {dayTasks.length > 0 && (
-                                                <div className={`w-1.5 h-1.5 rounded-full ${isSelected ? 'bg-indigo-300' : 'bg-purple-500'
-                                                    }`} />
-                                            )}
-                                        </div>
-
-                                        {durationString && (
-                                            <div className="flex flex-col items-center leading-none">
-                                                <span className={`text-[9px] font-bold ${isSelected ? 'text-indigo-200' : 'text-gray-400'
-                                                    }`}>
-                                                    {durationString}
-                                                </span>
-                                                {isHalfDay && (
-                                                    <span className={`text-[7px] font-black uppercase tracking-tighter ${isSelected ? 'text-white' : 'text-amber-600'}`}>
-                                                        Half Day
-                                                    </span>
-                                                )}
-                                            </div>
-                                        )}
-                                    </div>
-                                );
-                            };
-
-                            const hasAttendance = getAttendanceForDay(day).length > 0; // Kept for potential external use or if the dot logic is separate
-                            const hasTasks = getTasksForDay(day).length > 0; // Kept for potential external use
                             const isSelected = isSameDay(day, selectedDate);
                             const isCurrentMonth = isSameMonth(day, monthStart);
 
@@ -177,14 +168,13 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
                                 <button
                                     key={idx}
                                     onClick={() => setSelectedDate(day)}
-                                    className={`
-                                        relative h-14 rounded-xl flex flex-col items-center justify-center transition-all
+                                    className={`relative h-14 rounded-xl flex flex-col items-center justify-center transition-all
                                         ${!isCurrentMonth ? 'text-gray-300' : ''}
                                         ${isSelected ? 'bg-indigo-600 shadow-md scale-105 z-10' : 'hover:bg-indigo-50'}
                                         ${isToday(day) && !isSelected ? 'border-2 border-indigo-200' : ''}
                                     `}
                                 >
-                                    {getDayContent(day)}
+                                    <DayCell day={day} isCurrentMonth={isCurrentMonth} isSelected={isSelected} />
                                 </button>
                             );
                         })}

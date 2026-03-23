@@ -2,12 +2,11 @@ const Employee = require('../models/Employee');
 const Attendance = require('../models/Attendance');
 const Settings = require('../models/Settings');
 
-// @desc    Update employee heartbeat/presence
+// @desc    Update employee heartbeat/presence (Consolidated Network Check + Heartbeat)
 // @route   POST /api/utils/heartbeat
 const heartbeat = async (req, res) => {
     // req.user contains { id, emp_no, role } from protect middleware
     const { emp_no } = req.user;
-    const { is_on_wifi } = req.body;
 
     try {
         const now = new Date();
@@ -23,6 +22,9 @@ const heartbeat = async (req, res) => {
         // Employee is "online" ONLY if they are sending heartbeats (active app)
         employee.presence_status = 'online';
         await employee.save();
+
+        // RUN INTERNAL NETWORK CHECK
+        const is_on_wifi = await checkNetworkStatus(req);
 
         // Update Attendance Duration if on WiFi
         const attendance = await Attendance.findOne({
@@ -47,8 +49,8 @@ const heartbeat = async (req, res) => {
             }
 
             // Accumulate duration only if on WiFi
-            // Interval constraint (e.g., 15s) to guard against device sleep jumps
-            if (is_on_wifi && diffMs > 0 && diffMs <= 20000) {
+            // Interval constraint (e.g., 15s/20s) to guard against device sleep jumps
+            if (is_on_wifi && diffMs > 0 && diffMs <= 25000) {
                 attendance.total_duration_ms = (attendance.total_duration_ms || 0) + diffMs;
             }
 
@@ -67,7 +69,11 @@ const heartbeat = async (req, res) => {
             }
         }
 
-        res.json({ success: true, presence_status: employee.presence_status });
+        res.json({ 
+            success: true, 
+            presence_status: employee.presence_status,
+            is_on_wifi: !!is_on_wifi 
+        });
     } catch (error) {
         console.error('[PRESENCE-ERROR] Heartbeat failed:', error);
         res.status(500).json({ message: 'Server error' });
@@ -85,8 +91,10 @@ const checkNetworkStatus = async (req) => {
 
         const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
 
-        if (wifi_ssid && allowedSsid) {
-            return wifi_ssid.trim() === allowedSsid.trim();
+        const isNativeApp = wifi_ssid === 'NATIVE_BOUND';
+
+        if (wifi_ssid && allowedSsid && !isNativeApp) {
+            return wifi_ssid.trim().toLowerCase() === allowedSsid.trim().toLowerCase();
         } else if (allowedIp && allowedIp.trim() !== '') {
             return clientIp === allowedIp.trim();
         }
@@ -98,8 +106,7 @@ const checkNetworkStatus = async (req) => {
     }
 };
 
-// @desc    Poll active network status
-// @route   POST /api/utils/network-check
+// Polling placeholder for backward compatibility, but calls consolidated check
 const networkCheck = async (req, res) => {
     const is_on_wifi = await checkNetworkStatus(req);
     res.json({ is_on_wifi });

@@ -10,7 +10,7 @@ import NativeFaceCapture from './NativeFaceCapture';
 
 export default function App() {
     const webViewRef = useRef(null);
-    const BASE_URL = 'https://stackvil-tracker.vercel.app';
+    const BASE_URL = 'https://track.stackvil.com';
     const [initialToken, setInitialToken] = useState(null);
     const [isLoading, setIsLoading] = useState(true);
     const [initialUrl, setInitialUrl] = useState(`${BASE_URL}/`);
@@ -147,7 +147,7 @@ export default function App() {
             <SafeAreaProvider>
                 <SafeAreaView style={styles.splashContainer}>
                     <ActivityIndicator size="large" color="#4f46e5" />
-                    <Text style={styles.splashText}>Stackvil Tracker Loading...</Text>
+                    <Text style={styles.splashText}>Stackvil</Text>
                 </SafeAreaView>
             </SafeAreaProvider>
         );

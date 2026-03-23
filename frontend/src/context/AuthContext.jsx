@@ -44,13 +44,12 @@ export const AuthProvider = ({ children }) => {
         if (user && user.role === 'employee') {
             const sendHeartbeat = async () => {
                 try {
-                    // 1. Check network status
-                    const netRes = await api.post('/utils/network-check', { wifi_ssid: currentSsid });
-                    const networkStatus = netRes.data.is_on_wifi;
-                    setIsOnWifi(networkStatus);
-
-                    // 2. Send heartbeat
-                    await api.post('/utils/heartbeat', { is_on_wifi: networkStatus });
+                    // Send consolidated heartbeat (includes internal network check)
+                    const response = await api.post('/utils/heartbeat', { wifi_ssid: currentSsid });
+                    
+                    if (response.data) {
+                        setIsOnWifi(response.data.is_on_wifi);
+                    }
                 } catch (err) {
                     console.error('Heartbeat failed:', err);
                 }
