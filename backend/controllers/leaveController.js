@@ -56,10 +56,11 @@ const getAllLeaves = async (req, res) => {
         // Populate employee names manually or via populate if ref is set up correctly
         // Since we have emp_no as String, we might need to fetch employees separately or use aggregation
         const leavesWithDetails = await Promise.all(leaves.map(async (leave) => {
-            const employee = await Employee.findOne({ emp_no: leave.emp_no }).select('name');
+            const employee = await Employee.findOne({ emp_no: leave.emp_no });
+            const plain = leave._doc ? leave._doc : (typeof leave.toObject === 'function' ? leave.toObject() : JSON.parse(JSON.stringify(leave)));
             return {
-                ...leave._doc,
-                employeeName: employee ? employee.name : 'Unknown'
+                ...plain,
+                employeeName: employee ? (employee.full_name || employee.name) : 'Unknown'
             };
         }));
 

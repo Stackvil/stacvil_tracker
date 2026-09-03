@@ -28,14 +28,21 @@ const getISTTime = () => {
 };
 
 // @desc    Get current server time in IST
-// @route   GET /api/utils/time
-const getServerTime = (req, res) => {
+const getServerTime = async (req, res) => {
     const now = new Date();
+    let allow_after_hours_login = false;
+    try {
+        const Settings = require('../models/Settings');
+        const settings = await Settings.findOne({});
+        allow_after_hours_login = settings ? !!settings.allow_after_hours_login : false;
+    } catch (e) {}
+
     // Asia/Kolkata is UTC+5:30
     res.json({
         serverTime: now.toISOString(),
         timezone: 'Asia/Kolkata',
-        offset: '+05:30'
+        offset: '+05:30',
+        allow_after_hours_login
     });
 };
 

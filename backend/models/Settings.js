@@ -1,16 +1,5 @@
-const mongoose = require('mongoose');
+const { createModel } = require('../config/jsonStore');
 
-const settingsSchema = new mongoose.Schema({
-    office_wifi_ssid: {
-        type: String,
-        default: 'Your_Office_WiFi_Name'
-    },
-    office_public_ip: {
-        type: String,
-        default: null
-    }
-}, {
-    timestamps: true
-});
+const Settings = createModel('Settings');
 
-module.exports = mongoose.model('Settings', settingsSchema);
+module.exports = Settings;

@@ -1,0 +1,33 @@
+[
+  {
+    "emp_no": "ADMIN001",
+    "name": "admin",
+    "email": "admin@stackvil.com",
+    "password": "$2a$10$VnjvNp2W9yGliba4PuCv9eMQVqRcgdARImNJl1imFUIc5OIBmF/4O",
+    "full_name": "Stackvil Admin",
+    "role": "admin",
+    "status": "active",
+    "profile_picture": "https://ui-avatars.com/api/?name=Admin&background=6366f1&color=fff",
+    "_id": "018ece56afcd3df701d4f305",
+    "id": "018ece56afcd3df701d4f305",
+    "createdAt": "2026-09-01T11:37:14.079Z",
+    "updatedAt": "2026-09-01T11:37:14.080Z"
+  },
+  {
+    "emp_no": "EMPTEST",
+    "name": "test",
+    "full_name": "test emp",
+    "email": "test@123",
+    "password": "$2a$10$rfKJi5aqRWeR0tYoa0tBWO0TFo0QmgGuawitM5PBgyQalkOaQ2xQW",
+    "role": "employee",
+    "face_descriptor": [],
+    "is_face_enabled": false,
+    "is_wifi_login_enabled": true,
+    "_id": "c867f4cb157b7d175c34d20a",
+    "id": "c867f4cb157b7d175c34d20a",
+    "createdAt": "2026-09-02T14:51:52.554Z",
+    "updatedAt": "2026-09-02T19:37:44.581Z",
+    "last_seen": "2026-09-02T17:46:46.605Z",
+    "presence_status": "offline"
+  }
+]

@@ -71,25 +71,37 @@ const loginEmployee = async (req, res) => {
         if (employee.role !== 'admin' && employee.is_wifi_login_enabled) {
             try {
                 const settings = await Settings.findOne();
-                const allowedSsid = settings?.office_wifi_ssid;
-                const allowedIp = settings?.office_public_ip;
+                const allowedSsid = (settings?.office_wifi_ssid || '').trim();
+                const allowedIp = (settings?.office_public_ip || '').trim();
 
-                const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip || '').split(',')[0].trim();
+                const rawIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || req.ip || '').split(',')[0].trim();
+                const clientIp = rawIp.replace(/^::ffff:/, '');
 
-                if (wifi_ssid && wifi_ssid !== 'NATIVE_BOUND') {
-                    if (allowedSsid && allowedSsid !== 'Your_Office_WiFi_Name') {
-                        if (wifi_ssid.trim() !== allowedSsid.trim()) {
+                if (allowedSsid && allowedSsid !== '' && allowedSsid !== 'Your_Office_WiFi_Name') {
+                    if (wifi_ssid && wifi_ssid !== 'NATIVE_BOUND') {
+                        if (wifi_ssid.trim().toLowerCase() !== allowedSsid.toLowerCase()) {
                             return res.status(403).json({
-                                message: 'Login Denied: You must be connected to the authorized Office Wi-Fi network.',
+                                message: `Login Denied: Connected to "${wifi_ssid}". Authorized Office Wi-Fi is "${allowedSsid}".`,
                                 error: 'SSID_MISMATCH'
                             });
                         }
-                    }
-                } else if (allowedIp && allowedIp.trim() !== '') {
-                    // This handles browsers without SSID info AND Native Apps using NATIVE_BOUND fallback
-                    if (clientIp !== allowedIp.trim()) {
+                    } else if (allowedIp && allowedIp !== '') {
+                        if (clientIp !== allowedIp && clientIp !== '127.0.0.1' && clientIp !== '::1') {
+                            return res.status(403).json({
+                                message: `Login Denied: Unauthorized IP (${clientIp}). Please connect to Office Wi-Fi (${allowedSsid}).`,
+                                error: 'IP_MISMATCH'
+                            });
+                        }
+                    } else if (!wifi_ssid) {
                         return res.status(403).json({
-                            message: 'Login Denied: Unauthorized network. Mobile browser users must be on Office WiFi.',
+                            message: `Login Denied: Office Wi-Fi restriction enabled (${allowedSsid}). Please connect to Office Wi-Fi.`,
+                            error: 'SSID_REQUIRED'
+                        });
+                    }
+                } else if (allowedIp && allowedIp !== '') {
+                    if (clientIp !== allowedIp && clientIp !== '127.0.0.1' && clientIp !== '::1') {
+                        return res.status(403).json({
+                            message: `Login Denied: Unauthorized network IP (${clientIp}). Please connect to Office Wi-Fi.`,
                             error: 'IP_MISMATCH'
                         });
                     }
@@ -128,7 +140,10 @@ const loginEmployee = async (req, res) => {
         const istTimeNow = getISTTime();
         let isRestricted = false;
 
-        if (employee.role === 'employee' && (new Date() >= istTimeNow.sevenPM || istTimeNow.hour >= 19)) {
+        const settings = await Settings.findOne();
+        const allowAfterHours = settings ? !!settings.allow_after_hours_login : false;
+
+        if (employee.role === 'employee' && !allowAfterHours && (new Date() >= istTimeNow.sevenPM || istTimeNow.hour >= 19)) {
             // Check for valid approval
             const now = new Date();
             const approval = await LoginRequest.findOne({

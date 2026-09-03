@@ -19,28 +19,11 @@ const seedEmployees = async () => {
     try {
         await connectDB();
 
-        // 1. Wipe and Re-seed for maximum reliability
         console.log('Clearing existing specific employees to ensure fresh hashing...');
-        await Employee.deleteMany({ emp_no: { $in: [...employees.map(e => e.emp_no), 'ADMIN001'] } });
-
-        console.log('Seeding employees with "password123"...');
-        for (const empData of employees) {
-            const email = `${empData.name}@stackvil.com`;
-            const employee = new Employee({
-                emp_no: empData.emp_no,
-                name: empData.name,
-                email: email,
-                password: 'password123',
-                full_name: empData.full_name,
-                role: 'employee',
-                status: 'active',
-                profile_picture: `https://ui-avatars.com/api/?name=${encodeURIComponent(empData.full_name)}&background=random`
-            });
-            await employee.save();
-            console.log(`✅ ${empData.name} (ID: ${empData.emp_no}) seeded.`);
-        }
+        await Employee.deleteMany({ role: { $ne: 'admin' } });
 
         console.log('Seeding Admin with "stackvil"...');
+        await Employee.deleteMany({ emp_no: 'ADMIN001' });
         const admin = new Employee({
             emp_no: 'ADMIN001',
             name: 'admin',
@@ -54,7 +37,7 @@ const seedEmployees = async () => {
         await admin.save();
         console.log('✅ Admin (ID: ADMIN001) seeded.');
 
-        console.log('\n🚀 SEEDING COMPLETE! All passwords hashed.');
+        console.log('\n🚀 RESET COMPLETE! Database cleaned.');
         process.exit();
     } catch (error) {
         console.error('❌ Error seeding:', error.message);

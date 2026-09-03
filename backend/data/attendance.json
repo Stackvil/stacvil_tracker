@@ -1,0 +1,145 @@
+[
+  {
+    "emp_no": "ADMIN001",
+    "login_time": "2026-09-02T20:13:26+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "51795a6e643f926750bef94c",
+    "id": "51795a6e643f926750bef94c",
+    "createdAt": "2026-09-02T14:43:26.178Z",
+    "updatedAt": "2026-09-02T14:43:26.178Z"
+  },
+  {
+    "emp_no": "ADMIN001",
+    "login_time": "2026-09-02T20:18:35+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "ab56ba7e0614a7843c59c5ba",
+    "id": "ab56ba7e0614a7843c59c5ba",
+    "createdAt": "2026-09-02T14:48:35.972Z",
+    "updatedAt": "2026-09-02T14:48:35.972Z"
+  },
+  {
+    "emp_no": "ADMIN001",
+    "login_time": "2026-09-02T20:30:48+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "88d0d9cd5b0a73d4da1839ed",
+    "id": "88d0d9cd5b0a73d4da1839ed",
+    "createdAt": "2026-09-02T15:00:48.907Z",
+    "updatedAt": "2026-09-02T15:00:48.907Z"
+  },
+  {
+    "emp_no": "ADMIN001",
+    "login_time": "2026-09-02T20:31:40+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "47c758dc2bb00cffe5e20b17",
+    "id": "47c758dc2bb00cffe5e20b17",
+    "createdAt": "2026-09-02T15:01:40.308Z",
+    "updatedAt": "2026-09-02T15:01:40.308Z"
+  },
+  {
+    "emp_no": "EMPTEST",
+    "login_time": "2026-09-02T20:38:11+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "7513010b405686a5c1bd4539",
+    "id": "7513010b405686a5c1bd4539",
+    "createdAt": "2026-09-02T15:08:11.075Z",
+    "updatedAt": "2026-09-02T15:08:11.075Z"
+  },
+  {
+    "emp_no": "EMPTEST",
+    "login_time": "2026-09-02T20:40:13+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "c308850bb38812f38af3175d",
+    "id": "c308850bb38812f38af3175d",
+    "createdAt": "2026-09-02T15:10:13.873Z",
+    "updatedAt": "2026-09-02T15:10:13.873Z"
+  },
+  {
+    "emp_no": "ADMIN001",
+    "login_time": "2026-09-02T20:40:34+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "8959539c98a3738d04409a0b",
+    "id": "8959539c98a3738d04409a0b",
+    "createdAt": "2026-09-02T15:10:34.413Z",
+    "updatedAt": "2026-09-02T15:10:34.413Z"
+  },
+  {
+    "emp_no": "EMPTEST",
+    "login_time": "2026-09-02T20:40:46+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "afee85bd3e856f7d994a8cd0",
+    "id": "afee85bd3e856f7d994a8cd0",
+    "createdAt": "2026-09-02T15:10:46.458Z",
+    "updatedAt": "2026-09-02T15:10:46.458Z"
+  },
+  {
+    "emp_no": "EMPTEST",
+    "login_time": "2026-09-02T21:24:19+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "99a33dbd8924cabb6b0b3032",
+    "id": "99a33dbd8924cabb6b0b3032",
+    "createdAt": "2026-09-02T15:54:19.795Z",
+    "updatedAt": "2026-09-02T15:54:19.795Z"
+  },
+  {
+    "emp_no": "EMPTEST",
+    "login_time": "2026-09-02T23:06:34+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "b42fff6f6632c88398ef3a95",
+    "id": "b42fff6f6632c88398ef3a95",
+    "createdAt": "2026-09-02T17:36:34.642Z",
+    "updatedAt": "2026-09-02T17:36:34.642Z"
+  },
+  {
+    "emp_no": "EMPTEST",
+    "login_time": "2026-09-02T23:08:29+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "a2b0ef5e8c0e74a161dd2890",
+    "id": "a2b0ef5e8c0e74a161dd2890",
+    "createdAt": "2026-09-02T17:38:29.511Z",
+    "updatedAt": "2026-09-02T17:38:29.511Z"
+  },
+  {
+    "emp_no": "EMPTEST",
+    "login_time": "2026-09-02T23:08:59+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "51e597396c5be5b00614b26c",
+    "id": "51e597396c5be5b00614b26c",
+    "createdAt": "2026-09-02T17:38:59.062Z",
+    "updatedAt": "2026-09-02T17:38:59.062Z"
+  },
+  {
+    "emp_no": "EMPTEST",
+    "login_time": "2026-09-02T23:09:26+05:30",
+    "date": "2026-09-02",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "5fcb338141dbbeb83a75b84c",
+    "id": "5fcb338141dbbeb83a75b84c",
+    "createdAt": "2026-09-02T17:39:26.229Z",
+    "updatedAt": "2026-09-02T17:39:26.229Z"
+  }
+]

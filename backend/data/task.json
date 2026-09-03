@@ -1,0 +1,16 @@
+[
+  {
+    "emp_no": "EMPTEST",
+    "task_type": "daily",
+    "assigned_date": "2026-09-02",
+    "due_date": "2026-09-02",
+    "title": "complte uui",
+    "description": "",
+    "completion_percentage": 0,
+    "status": "pending",
+    "_id": "46b830de7e62784bc57197c7",
+    "id": "46b830de7e62784bc57197c7",
+    "createdAt": "2026-09-02T15:11:50.942Z",
+    "updatedAt": "2026-09-02T17:39:21.497Z"
+  }
+]

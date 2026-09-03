@@ -1,0 +1,16 @@
+[
+  {
+    "emp_no": "EMPTEST",
+    "type": "single",
+    "start_date": "2026-09-03",
+    "end_date": "2026-09-03",
+    "reason": "im sick",
+    "status": "approved",
+    "applied_by": "employee",
+    "_id": "06865a2d5f8192c64793fea4",
+    "id": "06865a2d5f8192c64793fea4",
+    "createdAt": "2026-09-02T14:53:23.006Z",
+    "updatedAt": "2026-09-02T15:01:56.366Z",
+    "admin_note": ""
+  }
+]

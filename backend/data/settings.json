@@ -1,0 +1,12 @@
+[
+  {
+    "office_wifi_ssid": "Your_Office_WiFi_Name",
+    "office_public_ip": "::1",
+    "is_wifi_restriction_enabled": true,
+    "_id": "90f3ed5cd941806bb26ecaa0",
+    "id": "90f3ed5cd941806bb26ecaa0",
+    "createdAt": "2026-08-31T10:11:14.327Z",
+    "updatedAt": "2026-09-02T17:39:12.106Z",
+    "allow_after_hours_login": true
+  }
+]

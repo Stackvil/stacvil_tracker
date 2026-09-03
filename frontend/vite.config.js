@@ -10,6 +10,7 @@ export default defineConfig({
     tailwindcss(),
   ],
   server: {
+    port: 5174,
     proxy: {
       // Forward all /api requests to the local backend — same as Vercel does in production
       '/api': {

@@ -86,8 +86,10 @@ const LeaveManagement = () => {
 
     const filteredLeaves = leaves.filter(leave => {
         const matchesStatus = filterStatus === 'all' || leave.status === filterStatus;
-        const matchesSearch = leave.employeeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            leave.emp_no.toLowerCase().includes(searchTerm.toLowerCase());
+        const empName = leave.employeeName || leave.emp_name || '';
+        const empNo = leave.emp_no || '';
+        const matchesSearch = empName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+            empNo.toLowerCase().includes(searchTerm.toLowerCase());
         return matchesStatus && matchesSearch;
     });
 

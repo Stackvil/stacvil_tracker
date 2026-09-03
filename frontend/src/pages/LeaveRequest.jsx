@@ -73,14 +73,8 @@ const LeaveRequest = () => {
             setSuccess('Leave application submitted successfully!');
             setFormData({ type: 'single', start_date: '', end_date: '', reason: '' });
 
-            if (user.isRestricted) {
-                setTimeout(() => {
-                    logout();
-                }, 2000);
-            } else {
-                fetchMyLeaves();
-                setTimeout(() => setSuccess(''), 5000);
-            }
+            fetchMyLeaves();
+            setTimeout(() => setSuccess(''), 5000);
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to submit leave application');
         } finally {

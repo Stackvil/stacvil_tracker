@@ -19,9 +19,10 @@ const getEmployeeTasks = async (req, res) => {
                     calculated_status = 'overdue';
                 }
             }
+            const doc = t._doc ? t._doc : (typeof t.toObject === 'function' ? t.toObject() : JSON.parse(JSON.stringify(t)));
             return {
-                ...t.toObject(),
-                id: t._id,
+                ...doc,
+                id: t._id || t.id,
                 calculated_status
             };
         });
@@ -81,6 +82,11 @@ const updateTaskStatus = async (req, res) => {
         }
 
         await task.save();
+        const io = req.app.get('io');
+        if (io) {
+            io.to(emp_no).emit('task_updated');
+            io.emit('task_updated_global');
+        }
         res.json({ message: 'Task updated', task });
     } catch (error) {
         console.error(error);
@@ -132,6 +138,11 @@ const createSelfAssignedTask = async (req, res) => {
         });
 
         await task.save();
+        const io = req.app.get('io');
+        if (io) {
+            io.to(emp_no).emit('task_updated');
+            io.emit('task_updated_global');
+        }
         res.status(201).json({ message: 'Task added successfully', task });
     } catch (error) {
         console.error(error);

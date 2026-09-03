@@ -11,6 +11,8 @@ import AttendanceCalendar from '../components/AttendanceCalendar';
 
 // DashboardTimer removed - consolidated to Header stopwatch
 
+import { io } from 'socket.io-client';
+
 const EmployeeDashboard = () => {
     const { user } = useContext(AuthContext);
     const [activeTab, setActiveTab] = useState('tasks');
@@ -41,6 +43,26 @@ const EmployeeDashboard = () => {
     const [leaveHistory, setLeaveHistory] = useState([]);
     const [firstLogin, setFirstLogin] = useState(null);
 
+    // Real-time socket listener for instant task updates without refreshing
+    useEffect(() => {
+        if (!user?.emp_no) return;
+        const socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+        socket.emit('join_room', user.emp_no.trim().toUpperCase());
+
+        const handleTaskUpdate = () => {
+            fetchTasks();
+        };
+
+        socket.on('task_updated', handleTaskUpdate);
+        socket.on('task_updated_global', handleTaskUpdate);
+
+        return () => {
+            socket.off('task_updated', handleTaskUpdate);
+            socket.off('task_updated_global', handleTaskUpdate);
+            socket.disconnect();
+        };
+    }, [user?.emp_no]);
+
     // Fetch first login time and duration
     useEffect(() => {
         const fetchDurationData = async () => {
@@ -58,10 +80,10 @@ const EmployeeDashboard = () => {
         let interval;
         if (activeTab === 'tasks') {
             fetchTasks();
-            interval = setInterval(fetchTasks, 30000); // auto-refresh tasks every 30s
+            interval = setInterval(fetchTasks, 5000); // Fast auto-refresh tasks every 5s
         } else {
             fetchAttendanceHistory();
-            interval = setInterval(fetchAttendanceHistory, 30000); // auto-refresh attendance every 30s
+            interval = setInterval(fetchAttendanceHistory, 15000); // auto-refresh attendance every 15s
         }
         return () => clearInterval(interval);
     }, [activeTab]);

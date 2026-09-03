@@ -11,14 +11,25 @@ const protect = async (req, res, next) => {
 
             // Restricted User Check
             if (decoded.isRestricted) {
-                const allowedRoutes = ['/api/leaves/apply', '/api/leaves/my-leaves', '/api/auth/logout'];
-                const currentPath = req.originalUrl.split('?')[0]; // Ignore query params
+                let allowAfterHours = false;
+                try {
+                    const Settings = require('../models/Settings');
+                    const settings = await Settings.findOne({});
+                    allowAfterHours = settings ? !!settings.allow_after_hours_login : false;
+                } catch (e) {}
 
-                if (!allowedRoutes.includes(currentPath)) {
-                    return res.status(403).json({
-                        message: 'Access restricted after office hours. You can only submit leave requests.',
-                        isRestricted: true
-                    });
+                if (allowAfterHours) {
+                    decoded.isRestricted = false;
+                } else {
+                    const allowedRoutes = ['/api/leaves/apply', '/api/leaves/my-leaves', '/api/auth/logout'];
+                    const currentPath = req.originalUrl.split('?')[0]; // Ignore query params
+
+                    if (!allowedRoutes.includes(currentPath)) {
+                        return res.status(403).json({
+                            message: 'Access restricted after office hours. You can only submit leave requests.',
+                            isRestricted: true
+                        });
+                    }
                 }
             }
 

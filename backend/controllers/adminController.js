@@ -37,9 +37,11 @@ const getEmployees = async (req, res) => {
         const today = istTime.date;
 
         const employees = await Employee.find({});
+        const settings = await Settings.findOne({});
+        const allowAfterHours = settings ? !!settings.allow_after_hours_login : false;
         const sevenPMIST = istTime.sevenPM;
         const now = new Date();
-        const isPastSevenPM = now >= sevenPMIST || istTime.hour >= 19;
+        const isPastSevenPM = !allowAfterHours && (now >= sevenPMIST || istTime.hour >= 19);
 
         // Cleanup: If past 7pm, close any active today's sessions
         if (isPastSevenPM) {
@@ -95,9 +97,11 @@ const getDailyReports = async (req, res) => {
     const filterDate = date || istTime.date;
     const isFilterToday = filterDate === istTime.date;
 
+    const settings = await Settings.findOne({});
+    const allowAfterHours = settings ? !!settings.allow_after_hours_login : false;
     const sevenPMIST = istTime.sevenPM;
     const now = new Date();
-    const isPastSevenPM = now >= sevenPMIST || istTime.hour >= 19;
+    const isPastSevenPM = !allowAfterHours && (now >= sevenPMIST || istTime.hour >= 19);
 
     try {
         // Silent cleanup: If it's past 7 PM, close any active sessions in the background
@@ -340,6 +344,11 @@ const assignTask = async (req, res) => {
         });
 
         await task.save();
+        const io = req.app.get('io');
+        if (io) {
+            io.to(emp_no).emit('task_updated', { message: 'New task assigned' });
+            io.emit('task_updated_global');
+        }
         res.status(201).json({ message: 'Task assigned successfully' });
     } catch (error) {
         console.error(error);
@@ -419,6 +428,12 @@ const respondToDecline = async (req, res) => {
             return res.status(404).json({ message: 'Task not found' });
         }
 
+        const io = req.app.get('io');
+        if (io) {
+            io.to(task.emp_no).emit('task_updated');
+            io.emit('task_updated_global');
+        }
+
         if (action === 'approve') {
             await Task.findByIdAndDelete(id);
             return res.json({ message: 'Task removed successfully' });
@@ -446,18 +461,33 @@ const deleteEmployee = async (req, res) => {
             return res.status(404).json({ message: 'Employee not found' });
         }
 
+        // Prevent admin from deleting their own currently logged-in account
+        if (req.user && req.user.emp_no === emp_no) {
+            return res.status(403).json({ message: 'You cannot delete your own admin account while logged in' });
+        }
+
+        // If deleting an admin account, ensure at least one admin remains
         if (employee.role === 'admin') {
-            return res.status(403).json({ message: 'Cannot delete admin accounts' });
+            const adminCount = await Employee.countDocuments({ role: 'admin' });
+            if (adminCount <= 1) {
+                return res.status(403).json({ message: 'Cannot delete the only remaining admin account' });
+            }
         }
 
         await Employee.deleteOne({ emp_no });
-        // Optionally delete tasks and attendance too
         await Task.deleteMany({ emp_no });
         await Attendance.deleteMany({ emp_no });
+        
+        try {
+            const Session = require('../models/Session');
+            await Session.deleteMany({ emp_no });
+        } catch (e) {
+            // Ignore if Session model is not available
+        }
 
         res.json({ message: 'Employee deleted successfully' });
     } catch (error) {
-        console.error(error);
+        console.error('Delete employee error:', error);
         res.status(500).json({ message: 'Server error' });
     }
 };
@@ -471,7 +501,15 @@ const deleteTask = async (req, res) => {
             return res.status(404).json({ message: 'Task not found' });
         }
 
+        const emp_no = task.emp_no;
         await Task.findByIdAndDelete(id);
+
+        const io = req.app.get('io');
+        if (io) {
+            io.to(emp_no).emit('task_updated');
+            io.emit('task_updated_global');
+        }
+
         res.json({ message: 'Task deleted successfully' });
     } catch (error) {
         console.error(error);
@@ -880,11 +918,11 @@ const updateEmployee = async (req, res) => {
 const getSettings = async (req, res) => {
     try {
         const settings = await Settings.findOne({});
-        const currentIp = req.headers['x-forwarded-for'] || req.socket.remoteAddress;
+        const currentIp = req.headers ? (req.headers['x-forwarded-for'] || req.socket?.remoteAddress) : '';
         
-        // Return empty settings if none exist, plus the current IP hint
+        const plainSettings = settings ? (settings.toObject ? settings.toObject() : JSON.parse(JSON.stringify(settings))) : {};
         res.json({
-            ...(settings ? settings.toObject() : {}),
+            ...plainSettings,
             current_ip: currentIp
         });
     } catch (error) {
@@ -897,7 +935,7 @@ const getSettings = async (req, res) => {
 // @route   POST /api/admin/settings
 const updateSettings = async (req, res) => {
     try {
-        const { office_wifi_ssid, office_public_ip } = req.body;
+        const { office_wifi_ssid, office_public_ip, allow_after_hours_login } = req.body;
 
         let settings = await Settings.findOne({});
         if (!settings) {
@@ -906,6 +944,7 @@ const updateSettings = async (req, res) => {
 
         if (office_wifi_ssid !== undefined) settings.office_wifi_ssid = office_wifi_ssid;
         if (office_public_ip !== undefined) settings.office_public_ip = office_public_ip;
+        if (allow_after_hours_login !== undefined) settings.allow_after_hours_login = !!allow_after_hours_login;
 
         await settings.save();
         res.json({ message: 'Settings updated successfully', settings });

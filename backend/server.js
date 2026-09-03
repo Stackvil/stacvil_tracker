@@ -8,11 +8,9 @@ const dotenv = require('dotenv');
 dotenv.config({ path: path.resolve(__dirname, '.env') });
 
 const connectDB = require('./config/db');
-const mongoose = require('mongoose');
 
 // Connect to Database
-// connectDB(); // Removed top-level call for Vercel compatibility
-// Middleware moved to after app initialization
+connectDB();
 
 const authRoutes = require('./routes/authRoutes');
 const taskRoutes = require('./routes/taskRoutes');
@@ -36,34 +34,25 @@ app.use(cors({
 app.use(express.json());
 app.use(morgan('dev'));
 
-// Middleware to ensure DB connection
+// Middleware to ensure DB initialization
 app.use(async (req, res, next) => {
     try {
         await connectDB();
         next();
     } catch (error) {
         console.error('Database connection failed:', error);
-        res.status(500).json({ message: 'Database connection failed', error: error.message });
+        res.status(500).json({ message: 'Database initialization failed', error: error.message });
     }
 });
 
 
 // Health check endpoint
 app.get('/api/health', (req, res) => {
-    const dbStatus = mongoose.connection.readyState;
-    const dbStatusMap = {
-        0: 'disconnected',
-        1: 'connected',
-        2: 'connecting',
-        3: 'disconnecting'
-    };
-
     res.json({
         status: 'ok',
-        database: dbStatusMap[dbStatus] || 'unknown',
+        database: 'json_file_store',
         uptime: process.uptime(),
         environment: {
-            hasMongoUri: !!process.env.MONGODB_URI,
             hasJwtSecret: !!process.env.JWT_SECRET,
             nodeEnv: process.env.NODE_ENV,
             region: process.env.VERCEL_REGION || 'local'

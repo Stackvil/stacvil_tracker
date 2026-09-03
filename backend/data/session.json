@@ -1,0 +1,151 @@
+[
+  {
+    "emp_no": "ADMIN001",
+    "session_token": "6df77957aeaea167a8ec686153a9953e9aa2441c63b37181f6796e3c4c4a4754",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T14:43:26.168Z",
+    "is_active": true,
+    "_id": "82e9cc204e0ae0d89eef4771",
+    "id": "82e9cc204e0ae0d89eef4771",
+    "createdAt": "2026-09-02T14:43:26.169Z",
+    "updatedAt": "2026-09-02T14:43:26.169Z"
+  },
+  {
+    "emp_no": "ADMIN001",
+    "session_token": "430ab3b3e7c63f8c80016e9c0a53b339c5e09e9bfe7ee49c4a894d51ab5837c2",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T14:48:35.963Z",
+    "is_active": true,
+    "_id": "e02539a25a99d125562a6fc2",
+    "id": "e02539a25a99d125562a6fc2",
+    "createdAt": "2026-09-02T14:48:35.965Z",
+    "updatedAt": "2026-09-02T14:48:35.965Z"
+  },
+  {
+    "emp_no": "ADMIN001",
+    "session_token": "aaa9028b6f192c481ca4bd5dd780b6e124a7ba7b2e22236e111cd6dc56afac5c",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T15:00:48.902Z",
+    "is_active": true,
+    "_id": "13ff3d59fdad9bbf39a4baa5",
+    "id": "13ff3d59fdad9bbf39a4baa5",
+    "createdAt": "2026-09-02T15:00:48.903Z",
+    "updatedAt": "2026-09-02T15:00:48.903Z"
+  },
+  {
+    "emp_no": "ADMIN001",
+    "session_token": "509934a6c43af919a0fecbed375e8798f2bafb1e65f9d6717990c0f5702f28e0",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T15:01:40.285Z",
+    "is_active": true,
+    "_id": "7659fa93f52e9f0fccc79b74",
+    "id": "7659fa93f52e9f0fccc79b74",
+    "createdAt": "2026-09-02T15:01:40.288Z",
+    "updatedAt": "2026-09-02T15:01:40.288Z"
+  },
+  {
+    "emp_no": "EMPTEST",
+    "session_token": "a3cb82475b3055ab7adb86241b964efb716c324ed10bb22bcce2eb400a4e46b2",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T15:08:11.064Z",
+    "is_active": false,
+    "_id": "03218dda69dcf3749dded99b",
+    "id": "03218dda69dcf3749dded99b",
+    "createdAt": "2026-09-02T15:08:11.066Z",
+    "updatedAt": "2026-09-02T15:10:13.847Z"
+  },
+  {
+    "emp_no": "EMPTEST",
+    "session_token": "4423be2dbafb1483572a4bf7185d8967b3af46c6b26c9d8f809f6ce51417613a",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T15:10:13.852Z",
+    "is_active": false,
+    "_id": "0ab77707f21e151fac5c515a",
+    "id": "0ab77707f21e151fac5c515a",
+    "createdAt": "2026-09-02T15:10:13.857Z",
+    "updatedAt": "2026-09-02T15:10:46.445Z"
+  },
+  {
+    "emp_no": "ADMIN001",
+    "session_token": "4dab6e999b992d087fee55296e23aa2317a96b62c2fed5f1a28fef4aeb6cec54",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T15:10:34.402Z",
+    "is_active": true,
+    "_id": "9f42b879565ba6f5c7058ff9",
+    "id": "9f42b879565ba6f5c7058ff9",
+    "createdAt": "2026-09-02T15:10:34.404Z",
+    "updatedAt": "2026-09-02T15:10:34.404Z"
+  },
+  {
+    "emp_no": "EMPTEST",
+    "session_token": "2ee52cb2e929bc4a6a414a584335c064bcbe4e42e1c77e19fa4496be397e35bb",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T15:10:46.447Z",
+    "is_active": false,
+    "_id": "fa5c0cb09161bf08a395423f",
+    "id": "fa5c0cb09161bf08a395423f",
+    "createdAt": "2026-09-02T15:10:46.450Z",
+    "updatedAt": "2026-09-02T15:54:19.776Z",
+    "last_activity": 1788364408047
+  },
+  {
+    "emp_no": "EMPTEST",
+    "session_token": "310bd0711730720074dce4e6f0b9c149a7730b6d191e220c0b8b5f84ca6fae8a",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T15:54:19.779Z",
+    "is_active": false,
+    "_id": "d6cb2125a98668b572ac1f8e",
+    "id": "d6cb2125a98668b572ac1f8e",
+    "createdAt": "2026-09-02T15:54:19.785Z",
+    "updatedAt": "2026-09-02T17:36:34.628Z",
+    "last_activity": 1788364459837
+  },
+  {
+    "emp_no": "EMPTEST",
+    "session_token": "b44dd19f5036823a0284f03b2f9d7a2b363fea440cf7148cbc1b4ba17c2412a9",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T17:36:34.631Z",
+    "is_active": false,
+    "_id": "983630a0fa676f22b2451016",
+    "id": "983630a0fa676f22b2451016",
+    "createdAt": "2026-09-02T17:36:34.634Z",
+    "updatedAt": "2026-09-02T17:38:29.484Z",
+    "last_activity": 1788370701818
+  },
+  {
+    "emp_no": "EMPTEST",
+    "session_token": "a2598d97822a7712f94a9a4176cda42d61b23dec3dfbc9942a70109db5b218f6",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T17:38:29.501Z",
+    "is_active": false,
+    "_id": "f2c6ba052bd07d68456b7b69",
+    "id": "f2c6ba052bd07d68456b7b69",
+    "createdAt": "2026-09-02T17:38:29.505Z",
+    "updatedAt": "2026-09-02T17:38:59.048Z",
+    "last_activity": 1788370718677
+  },
+  {
+    "emp_no": "EMPTEST",
+    "session_token": "0fb6a6311025ab04855382ffc392b0232cd4212f2742248440df5522e7d28f3d",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T17:38:59.053Z",
+    "is_active": false,
+    "_id": "e20b5cc80148de58b2ef3daf",
+    "id": "e20b5cc80148de58b2ef3daf",
+    "createdAt": "2026-09-02T17:38:59.055Z",
+    "updatedAt": "2026-09-02T17:39:26.177Z",
+    "last_activity": 1788370761484
+  },
+  {
+    "emp_no": "EMPTEST",
+    "session_token": "739369abec67db99e5901e1e45c77c6c974cafc939e3b5d5719a3ac9b788e863",
+    "device_info": "unknown",
+    "login_time": "2026-09-02T17:39:26.186Z",
+    "is_active": true,
+    "_id": "95999dcc15cbcc9ecc06af56",
+    "id": "95999dcc15cbcc9ecc06af56",
+    "createdAt": "2026-09-02T17:39:26.191Z",
+    "updatedAt": "2026-09-02T17:46:47.159Z",
+    "last_activity": 1788371207158
+  }
+]

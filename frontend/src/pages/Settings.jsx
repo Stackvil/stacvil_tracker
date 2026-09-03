@@ -1,12 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import api from '../services/api';
-import { Wifi, Globe, Save, CheckCircle2, AlertCircle } from 'lucide-react';
+import { Wifi, Globe, Save, CheckCircle2, AlertCircle, Clock } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 const Settings = () => {
     const [settings, setSettings] = useState({
         office_wifi_ssid: '',
-        office_public_ip: ''
+        office_public_ip: '',
+        allow_after_hours_login: false
     });
     const [currentIp, setCurrentIp] = useState('');
     const [loading, setLoading] = useState(true);
@@ -24,7 +25,8 @@ const Settings = () => {
             if (response.data) {
                 setSettings({
                     office_wifi_ssid: response.data.office_wifi_ssid || '',
-                    office_public_ip: response.data.office_public_ip || ''
+                    office_public_ip: response.data.office_public_ip || '',
+                    allow_after_hours_login: !!response.data.allow_after_hours_login
                 });
                 if (response.data.current_ip) {
                     setCurrentIp(response.data.current_ip);
@@ -35,6 +37,20 @@ const Settings = () => {
             setError(`Could not load network settings: ${err.response?.data?.message || err.message}`);
         } finally {
             setLoading(false);
+        }
+    };
+
+    const handleToggleAfterHours = async (checked) => {
+        const updated = { ...settings, allow_after_hours_login: checked };
+        setSettings(updated);
+        setError('');
+        setSuccess('');
+        try {
+            await api.post('/admin/settings', updated);
+            setSuccess(`After-hours login ${checked ? 'ENABLED' : 'DISABLED'} successfully!`);
+            setTimeout(() => setSuccess(''), 3000);
+        } catch (err) {
+            setError(err.response?.data?.message || 'Failed to save settings');
         }
     };
 
@@ -62,10 +78,10 @@ const Settings = () => {
                 <div className="p-8 border-b border-gray-100 bg-gradient-to-r from-indigo-50 to-white">
                     <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
                         <Wifi className="w-8 h-8 text-indigo-600" />
-                        Office Network Configuration
+                        Office Network & Work Hours Configuration
                     </h1>
                     <p className="text-gray-500 mt-2 text-sm">
-                        Restrict employee logins to authorized office networks. These settings apply to all employees with "WiFi Login Restricted" enabled.
+                        Manage office network restrictions and after-hours login permissions for employees.
                     </p>
                 </div>
 
@@ -82,6 +98,29 @@ const Settings = () => {
                             <p className="text-sm font-medium">{success}</p>
                         </div>
                     )}
+
+                    {/* After Hours Login Toggle */}
+                    <div className="bg-gradient-to-r from-purple-50 via-indigo-50 to-white p-6 rounded-2xl border border-indigo-100 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                        <div className="space-y-1">
+                            <div className="flex items-center gap-2">
+                                <Clock className="w-5 h-5 text-indigo-600" />
+                                <h3 className="text-base font-bold text-gray-800">Allow Login & Work After 7 PM</h3>
+                            </div>
+                            <p className="text-xs text-gray-500">
+                                When enabled, employees can log in and work after 7:00 PM without auto-logout or restricted access enforcement.
+                            </p>
+                        </div>
+                        <label className="relative inline-flex items-center cursor-pointer shrink-0">
+                            <input
+                                type="checkbox"
+                                checked={settings.allow_after_hours_login}
+                                onChange={(e) => handleToggleAfterHours(e.target.checked)}
+                                className="sr-only peer"
+                            />
+                            <div className="w-14 h-7 bg-gray-200 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-0.5 after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-6 after:w-6 after:transition-all peer-checked:bg-indigo-600"></div>
+                            <span className="ml-3 text-xs font-bold text-gray-700">{settings.allow_after_hours_login ? 'ENABLED' : 'DISABLED'}</span>
+                        </label>
+                    </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                         {/* WiFi SSID Section */}

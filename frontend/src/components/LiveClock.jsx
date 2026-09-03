@@ -25,6 +25,10 @@ const LiveClock = () => {
             syncRef.current.performanceStartTime = performance.now();
             syncRef.current.lastUpdatePerformance = performance.now();
 
+            if (timeRes.data.allow_after_hours_login !== undefined) {
+                syncRef.current.allow_after_hours_login = !!timeRes.data.allow_after_hours_login;
+            }
+
             if (isEmployee) {
                 try {
                     const durationRes = await api.get('/attendance/duration');
@@ -60,8 +64,8 @@ const LiveClock = () => {
                 };
                 setCurrentTime(new Intl.DateTimeFormat('en-IN', options).format(nowInIST));
 
-                // 2. Auto-Logout Check (7 PM IST)
-                if (isEmployee) {
+                // 2. Auto-Logout Check (7 PM IST) - Only if after hours login is NOT allowed
+                if (isEmployee && !syncRef.current.allow_after_hours_login) {
                     const dateStr = nowInIST.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
                     const sevenPMIST = new Date(`${dateStr}T19:00:00+05:30`);
                     if (nowInIST >= sevenPMIST && !user.isRestricted && !syncRef.current.loggedOut) {

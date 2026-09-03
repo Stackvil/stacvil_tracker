@@ -85,18 +85,25 @@ const checkNetworkStatus = async (req) => {
         const settings = await Settings.findOne();
         if (!settings) return true;
 
-        const allowedSsid = settings.office_wifi_ssid;
-        const allowedIp = settings.office_public_ip;
-        const wifi_ssid = req.body.wifi_ssid || req.query.wifi_ssid;
+        const allowedSsid = (settings.office_wifi_ssid || '').trim();
+        const allowedIp = (settings.office_public_ip || '').trim();
+        const wifi_ssid = req.body?.wifi_ssid || req.query?.wifi_ssid;
 
-        const clientIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
+        const rawIp = (req.headers['x-forwarded-for'] || req.socket?.remoteAddress || '').split(',')[0].trim();
+        const clientIp = rawIp.replace(/^::ffff:/, '');
 
         const isNativeApp = wifi_ssid === 'NATIVE_BOUND';
 
-        if (wifi_ssid && allowedSsid && !isNativeApp) {
-            return wifi_ssid.trim().toLowerCase() === allowedSsid.trim().toLowerCase();
-        } else if (allowedIp && allowedIp.trim() !== '') {
-            return clientIp === allowedIp.trim();
+        if (allowedSsid && allowedSsid !== '' && allowedSsid !== 'Your_Office_WiFi_Name') {
+            if (wifi_ssid && !isNativeApp) {
+                return wifi_ssid.trim().toLowerCase() === allowedSsid.toLowerCase();
+            } else if (allowedIp && allowedIp !== '') {
+                return clientIp === allowedIp || clientIp === '127.0.0.1' || clientIp === '::1';
+            } else if (!wifi_ssid) {
+                return false;
+            }
+        } else if (allowedIp && allowedIp !== '') {
+            return clientIp === allowedIp || clientIp === '127.0.0.1' || clientIp === '::1';
         }
 
         return true; 
