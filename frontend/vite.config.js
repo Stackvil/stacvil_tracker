@@ -11,6 +11,7 @@ export default defineConfig({
   ],
   server: {
     port: 5174,
+    allowedHosts: true,
     proxy: {
       // Forward all /api requests to the local backend — same as Vercel does in production
       '/api': {

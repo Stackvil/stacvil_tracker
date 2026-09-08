@@ -1,0 +1,13 @@
+tunnel: 4ef65c75-0670-43f6-8ae2-9e73e1644ae6
+credentials-file: C:\Users\Nikhil\.cloudflared\4ef65c75-0670-43f6-8ae2-9e73e1644ae6.json
+
+ingress:
+  - hostname: track.stackvil.com
+    path: ^/api/.*
+    service: http://localhost:5000
+  - hostname: track.stackvil.com
+    path: ^/socket.io/.*
+    service: http://localhost:5000
+  - hostname: track.stackvil.com
+    service: http://localhost:5175
+  - service: http_status:404

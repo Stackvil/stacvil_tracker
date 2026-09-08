@@ -27,7 +27,8 @@ app.use(cors({
         'http://localhost:5173',
         'http://localhost:5174',
         'https://track.stackvil.com',
-        /\.vercel\.app$/
+        /\.vercel\.app$/,
+        /\.trycloudflare\.com$/
     ],
     credentials: true
 }));
@@ -69,9 +70,22 @@ app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/utils', utilsRoutes);
 
-app.get('/', (req, res) => {
-    res.send('Employee Work Monitoring API is running...');
-});
+const fs = require('fs');
+const frontendDistPath = path.resolve(__dirname, '../frontend/dist');
+
+if (fs.existsSync(frontendDistPath)) {
+    app.use(express.static(frontendDistPath));
+    app.get('*', (req, res, next) => {
+        if (req.originalUrl.startsWith('/api') || req.originalUrl.startsWith('/socket.io')) {
+            return next();
+        }
+        res.sendFile(path.join(frontendDistPath, 'index.html'));
+    });
+} else {
+    app.get('/', (req, res) => {
+        res.send('Employee Work Monitoring API is running...');
+    });
+}
 
 // 404 handler for undefined routes
 app.use((req, res, next) => {
@@ -102,7 +116,8 @@ const io = new Server(server, {
             'http://localhost:5173',
             'http://localhost:5174',
             'https://track.stackvil.com',
-            /\.vercel\.app$/
+            /\.vercel\.app$/,
+            /\.trycloudflare\.com$/
         ],
         credentials: true
     }
