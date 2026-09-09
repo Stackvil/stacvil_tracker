@@ -1,7 +1,7 @@
 import React, { useState, useContext, useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import { LogIn, User, Lock, AlertCircle, Eye, EyeOff, Camera, KeyRound, X } from 'lucide-react';
+import { LogIn, User, Lock, AlertCircle, Eye, EyeOff, Camera, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { io } from 'socket.io-client';
 import FaceCapture from '../components/FaceCapture';
@@ -14,7 +14,6 @@ const LoginPage = () => {
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [error, setError] = useState('');
     const [isShaking, setIsShaking] = useState(false);
-    const [showCredentialsModal, setShowCredentialsModal] = useState(false);
     const [showRequestModal, setShowRequestModal] = useState(false);
     const [requestReason, setRequestReason] = useState('');
     const [requestStatus, setRequestStatus] = useState(null);
@@ -117,13 +116,6 @@ const LoginPage = () => {
         setIsSubmitting(false);
     };
 
-    const fillCredentials = (id, pass) => {
-        setEmpNo(id);
-        setPassword(pass);
-        setError('');
-        setShowCredentialsModal(false);
-    };
-
     const handleRequestSubmit = async (e) => {
         e.preventDefault();
         setRequestStatus({ type: 'loading', message: 'Submitting request...' });
@@ -137,18 +129,6 @@ const LoginPage = () => {
 
     return (
         <div className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-indigo-500 via-purple-500 to-pink-500 p-4">
-            
-            {/* Top Right Show Credentials Button */}
-            <div className="absolute top-4 right-4 sm:top-6 sm:right-6 z-20">
-                <button
-                    onClick={() => setShowCredentialsModal(true)}
-                    className="flex items-center gap-1.5 bg-white/90 hover:bg-white text-indigo-900 font-semibold text-xs px-3.5 py-2 rounded-full shadow-lg backdrop-blur-sm transition-all active:scale-95"
-                >
-                    <KeyRound className="w-3.5 h-3.5 text-indigo-600" />
-                    <span>Show Credentials</span>
-                </button>
-            </div>
-
             <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ 
@@ -258,184 +238,6 @@ const LoginPage = () => {
                     </p>
                 </div>
             </motion.div>
-
-            {/* Credentials Modal */}
-            <AnimatePresence>
-                {showCredentialsModal && (
-                    <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center p-4 z-50">
-                        <motion.div
-                            initial={{ opacity: 0, scale: 0.95 }}
-                            animate={{ opacity: 1, scale: 1 }}
-                            exit={{ opacity: 0, scale: 0.95 }}
-                            className="bg-white rounded-3xl p-6 max-w-sm w-full shadow-2xl"
-                        >
-                            <div className="flex items-center justify-between mb-4 pb-3 border-b border-gray-100">
-                                <div className="flex items-center gap-2">
-                                    <KeyRound className="w-5 h-5 text-indigo-600" />
-                                    <h3 className="font-bold text-gray-800 text-base">System Credentials</h3>
-                                </div>
-                                <button 
-                                    onClick={() => setShowCredentialsModal(false)}
-                                    className="text-gray-400 hover:text-gray-600 p-1"
-                                >
-                                    <X className="w-5 h-5" />
-                                </button>
-                            </div>
-
-                            <p className="text-xs text-gray-500 mb-4">Click any account below to autofill login:</p>
-
-                            <div className="space-y-2.5 max-h-[60vh] overflow-y-auto pr-1">
-                                {/* Owner / Super Admin */}
-                                <div 
-                                    onClick={() => fillCredentials('ADMIN001', 'admin123')}
-                                    className="p-3 rounded-2xl bg-indigo-50/70 hover:bg-indigo-100/70 border border-indigo-100 transition-all cursor-pointer group"
-                                >
-                                    <div className="flex justify-between items-center mb-0.5">
-                                        <span className="text-xs font-bold text-indigo-900">Stackvil Super Admin (Owner)</span>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-indigo-200 text-indigo-800">Owner</span>
-                                    </div>
-                                    <div className="text-xs font-mono text-gray-600 space-y-0.5">
-                                        <div>ID: <span className="font-bold text-gray-800">ADMIN001</span> • Pass: <span className="font-bold text-gray-800">admin123</span></div>
-                                    </div>
-                                </div>
-
-                                {/* Manager: M. Nikhil */}
-                                <div 
-                                    onClick={() => fillCredentials('202601', 'admin123')}
-                                    className="p-3 rounded-2xl bg-purple-50/70 hover:bg-purple-100/70 border border-purple-100 transition-all cursor-pointer group"
-                                >
-                                    <div className="flex justify-between items-center mb-0.5">
-                                        <span className="text-xs font-bold text-purple-900">M. Nikhil (Manager)</span>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-purple-200 text-purple-800">Manager</span>
-                                    </div>
-                                    <div className="text-xs font-mono text-gray-600 space-y-0.5">
-                                        <div>ID: <span className="font-bold text-gray-800">202601</span> • Pass: <span className="font-bold text-gray-800">admin123</span></div>
-                                    </div>
-                                </div>
-
-                                {/* HR: J. Sravani */}
-                                <div 
-                                    onClick={() => fillCredentials('202602', 'admin123')}
-                                    className="p-3 rounded-2xl bg-emerald-50/70 hover:bg-emerald-100/70 border border-emerald-100 transition-all cursor-pointer group"
-                                >
-                                    <div className="flex justify-between items-center mb-0.5">
-                                        <span className="text-xs font-bold text-emerald-900">J. Sravani (HR Executive)</span>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-200 text-emerald-800">HR</span>
-                                    </div>
-                                    <div className="text-xs font-mono text-gray-600 space-y-0.5">
-                                        <div>ID: <span className="font-bold text-gray-800">202602</span> • Pass: <span className="font-bold text-gray-800">admin123</span></div>
-                                    </div>
-                                </div>
-
-                                {/* Engineer: A. Vikas */}
-                                <div 
-                                    onClick={() => fillCredentials('202603', 'admin123')}
-                                    className="p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-all cursor-pointer group"
-                                >
-                                    <div className="flex justify-between items-center mb-0.5">
-                                        <span className="text-xs font-bold text-gray-900">A. Vikas (Software Engineer)</span>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-800">202603</span>
-                                    </div>
-                                    <div className="text-xs font-mono text-gray-600 space-y-0.5">
-                                        <div>ID: <span className="font-bold text-gray-800">202603</span> • Pass: <span className="font-bold text-gray-800">admin123</span></div>
-                                    </div>
-                                </div>
-
-                                {/* Engineer: M. Avanish */}
-                                <div 
-                                    onClick={() => fillCredentials('202604', 'admin123')}
-                                    className="p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-all cursor-pointer group"
-                                >
-                                    <div className="flex justify-between items-center mb-0.5">
-                                        <span className="text-xs font-bold text-gray-900">M. Avanish (Software Engineer)</span>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-800">202604</span>
-                                    </div>
-                                    <div className="text-xs font-mono text-gray-600 space-y-0.5">
-                                        <div>ID: <span className="font-bold text-gray-800">202604</span> • Pass: <span className="font-bold text-gray-800">admin123</span></div>
-                                    </div>
-                                </div>
-
-                                {/* Engineer: G. Tejaswini */}
-                                <div 
-                                    onClick={() => fillCredentials('202607', 'admin123')}
-                                    className="p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-all cursor-pointer group"
-                                >
-                                    <div className="flex justify-between items-center mb-0.5">
-                                        <span className="text-xs font-bold text-gray-900">G. Tejaswini (QA Engineer)</span>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-800">202607</span>
-                                    </div>
-                                    <div className="text-xs font-mono text-gray-600 space-y-0.5">
-                                        <div>ID: <span className="font-bold text-gray-800">202607</span> • Pass: <span className="font-bold text-gray-800">admin123</span></div>
-                                    </div>
-                                </div>
-
-                                {/* Engineer: G. Varun */}
-                                <div 
-                                    onClick={() => fillCredentials('202608', 'admin123')}
-                                    className="p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-all cursor-pointer group"
-                                >
-                                    <div className="flex justify-between items-center mb-0.5">
-                                        <span className="text-xs font-bold text-gray-900">G. Varun (Frontend Dev)</span>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-800">202608</span>
-                                    </div>
-                                    <div className="text-xs font-mono text-gray-600 space-y-0.5">
-                                        <div>ID: <span className="font-bold text-gray-800">202608</span> • Pass: <span className="font-bold text-gray-800">admin123</span></div>
-                                    </div>
-                                </div>
-
-                                {/* Engineer: D. Tirumala Ganesh */}
-                                <div 
-                                    onClick={() => fillCredentials('202609', 'admin123')}
-                                    className="p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-all cursor-pointer group"
-                                >
-                                    <div className="flex justify-between items-center mb-0.5">
-                                        <span className="text-xs font-bold text-gray-900">D. Tirumala Ganesh (Backend Dev)</span>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-800">202609</span>
-                                    </div>
-                                    <div className="text-xs font-mono text-gray-600 space-y-0.5">
-                                        <div>ID: <span className="font-bold text-gray-800">202609</span> • Pass: <span className="font-bold text-gray-800">admin123</span></div>
-                                    </div>
-                                </div>
-
-                                {/* Engineer: B. Surendra Vyas */}
-                                <div 
-                                    onClick={() => fillCredentials('202610', 'admin123')}
-                                    className="p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-all cursor-pointer group"
-                                >
-                                    <div className="flex justify-between items-center mb-0.5">
-                                        <span className="text-xs font-bold text-gray-900">B. Surendra Vyas (Full-Stack Dev)</span>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-800">202610</span>
-                                    </div>
-                                    <div className="text-xs font-mono text-gray-600 space-y-0.5">
-                                        <div>ID: <span className="font-bold text-gray-800">202610</span> • Pass: <span className="font-bold text-gray-800">admin123</span></div>
-                                    </div>
-                                </div>
-
-                                {/* Engineer: M. Lakshmi Mahitha */}
-                                <div 
-                                    onClick={() => fillCredentials('202611', 'admin123')}
-                                    className="p-3 rounded-2xl bg-gray-50 hover:bg-gray-100 border border-gray-200 transition-all cursor-pointer group"
-                                >
-                                    <div className="flex justify-between items-center mb-0.5">
-                                        <span className="text-xs font-bold text-gray-900">M. Lakshmi Mahitha (Engineer)</span>
-                                        <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-gray-200 text-gray-800">202611</span>
-                                    </div>
-                                    <div className="text-xs font-mono text-gray-600 space-y-0.5">
-                                        <div>ID: <span className="font-bold text-gray-800">202611</span> • Pass: <span className="font-bold text-gray-800">admin123</span></div>
-                                    </div>
-                                </div>
-                            </div>
-
-                            <button
-                                onClick={() => setShowCredentialsModal(false)}
-                                className="w-full mt-5 py-2.5 bg-gray-100 hover:bg-gray-200 text-xs font-bold text-gray-700 rounded-xl transition-all"
-                            >
-                                Close
-                            </button>
-                        </motion.div>
-                    </div>
-                )}
-            </AnimatePresence>
 
             {/* Office Hours Restricted Modal */}
             {showRequestModal && (
