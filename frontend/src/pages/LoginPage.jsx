@@ -149,8 +149,8 @@ const LoginPage = () => {
                                 className="w-14 h-14 rounded-xl object-cover" 
                             />
                         </div>
-                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-800">Stackvil Attendance</h1>
-                        <p className="text-gray-500 mt-1.5 text-sm">Sign in to access your attendance portal</p>
+                        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Stackvil Technologies</h1>
+                        <p className="text-gray-500 mt-1.5 text-xs sm:text-sm">Workforce & Performance Management Portal</p>
                     </div>
 
                     <form onSubmit={handleSubmit} className="space-y-5">
