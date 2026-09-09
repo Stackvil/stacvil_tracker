@@ -18,18 +18,29 @@ const adminRoutes = require('./routes/adminRoutes');
 const attendanceRoutes = require('./routes/attendanceRoutes');
 const leaveRoutes = require('./routes/leaveRoutes');
 const utilsRoutes = require('./routes/utilsRoutes');
+const documentRoutes = require('./routes/documentRoutes');
 
 const app = express();
 
 // Middleware
 app.use(cors({
-    origin: [
-        'http://localhost:5173',
-        'http://localhost:5174',
-        'https://track.stackvil.com',
-        /\.vercel\.app$/,
-        /\.trycloudflare\.com$/
-    ],
+    origin: (origin, callback) => {
+        // Allow requests with no origin (like mobile apps, curl, server-to-server)
+        if (!origin) return callback(null, true);
+        if (
+            origin.includes('localhost') ||
+            origin.includes('127.0.0.1') ||
+            origin.includes('stackvil.com') ||
+            origin.includes('ngrok') ||
+            origin.includes('ngrok-free.app') ||
+            origin.includes('vercel.app') ||
+            origin.includes('trycloudflare.com') ||
+            origin.includes('loca.lt')
+        ) {
+            return callback(null, true);
+        }
+        return callback(null, true); // Allow all during development & local tunneling
+    },
     credentials: true
 }));
 app.use(express.json());
@@ -69,6 +80,18 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/attendance', attendanceRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/utils', utilsRoutes);
+app.use('/api/documents', documentRoutes);
+app.use('/api/admin/documents', documentRoutes);
+
+// Fallback aliases for root prefix
+app.use('/auth', authRoutes);
+app.use('/tasks', taskRoutes);
+app.use('/admin', adminRoutes);
+app.use('/attendance', attendanceRoutes);
+app.use('/leaves', leaveRoutes);
+app.use('/documents', documentRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+app.use('/api/uploads', express.static(path.join(__dirname, 'uploads')));
 
 const fs = require('fs');
 const frontendDistPath = path.resolve(__dirname, '../frontend/dist');
@@ -112,13 +135,8 @@ const { Server } = require("socket.io");
 const server = http.createServer(app);
 const io = new Server(server, {
     cors: {
-        origin: [
-            'http://localhost:5173',
-            'http://localhost:5174',
-            'https://track.stackvil.com',
-            /\.vercel\.app$/,
-            /\.trycloudflare\.com$/
-        ],
+        origin: "*",
+        methods: ["GET", "POST", "PUT", "DELETE"],
         credentials: true
     }
 });

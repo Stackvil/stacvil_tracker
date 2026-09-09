@@ -15,7 +15,7 @@ export default defineConfig({
     proxy: {
       // Forward all /api requests to the local backend — same as Vercel does in production
       '/api': {
-        target: 'http://localhost:5000',
+        target: 'http://localhost:5001',
         changeOrigin: true,
       }
     }

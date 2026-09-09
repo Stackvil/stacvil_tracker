@@ -5,16 +5,32 @@ import { AuthContext } from '../context/AuthContext';
 
 const LiveClock = () => {
     const { user, logout, isOnWifi } = useContext(AuthContext);
+    const isStaff = user && user.role !== 'admin' && user.emp_no !== 'ADMIN001';
+    
+    // Read cached duration to avoid resetting to 0s on page refresh
+    const getCachedDuration = () => {
+        if (!user?.emp_no) return 0;
+        try {
+            const cached = sessionStorage.getItem(`work_duration_${user.emp_no}`);
+            const cachedTs = sessionStorage.getItem(`work_duration_ts_${user.emp_no}`);
+            if (cached && cachedTs) {
+                const elapsedSinceSave = (Date.now() - Number(cachedTs)) / 1000;
+                return Math.max(0, Number(cached) + Math.max(0, elapsedSinceSave));
+            }
+            return cached ? Number(cached) : 0;
+        } catch (e) {
+            return 0;
+        }
+    };
+
     const [currentTime, setCurrentTime] = useState(null);
-    const [workDuration, setWorkDuration] = useState(0); 
+    const [workDuration, setWorkDuration] = useState(getCachedDuration); 
     const syncRef = useRef({
         serverStartTime: null,
         performanceStartTime: null,
-        workDurationStart: 0,
+        workDurationStart: getCachedDuration(),
         lastUpdatePerformance: null
     });
-
-    const isEmployee = user?.role?.toLowerCase() === 'employee';
 
     const syncTime = async () => {
         try {
@@ -29,12 +45,18 @@ const LiveClock = () => {
                 syncRef.current.allow_after_hours_login = !!timeRes.data.allow_after_hours_login;
             }
 
-            if (isEmployee) {
+            if (isStaff) {
                 try {
                     const durationRes = await api.get('/attendance/duration');
                     const serverDurationSec = (durationRes.data.totalMilliseconds || 0) / 1000;
-                    syncRef.current.workDurationStart = serverDurationSec;
-                    setWorkDuration(serverDurationSec);
+                    if (serverDurationSec > 0 || !sessionStorage.getItem(`work_duration_${user.emp_no}`)) {
+                        syncRef.current.workDurationStart = serverDurationSec;
+                        setWorkDuration(serverDurationSec);
+                        if (user?.emp_no) {
+                            sessionStorage.setItem(`work_duration_${user.emp_no}`, String(serverDurationSec));
+                            sessionStorage.setItem(`work_duration_ts_${user.emp_no}`, String(Date.now()));
+                        }
+                    }
                 } catch (durErr) {}
             }
         } catch (error) {
@@ -46,8 +68,8 @@ const LiveClock = () => {
 
     useEffect(() => {
         syncTime();
-        // Periodic full sync every 2 minutes
-        const syncInterval = setInterval(syncTime, 120000);
+        // Periodic full sync every 30 seconds
+        const syncInterval = setInterval(syncTime, 30000);
 
         const updateClock = () => {
             const nowPerf = performance.now();
@@ -65,7 +87,7 @@ const LiveClock = () => {
                 setCurrentTime(new Intl.DateTimeFormat('en-IN', options).format(nowInIST));
 
                 // 2. Auto-Logout Check (7 PM IST) - Only if after hours login is NOT allowed
-                if (isEmployee && !syncRef.current.allow_after_hours_login) {
+                if (isStaff && !syncRef.current.allow_after_hours_login) {
                     const dateStr = nowInIST.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
                     const sevenPMIST = new Date(`${dateStr}T19:00:00+05:30`);
                     if (nowInIST >= sevenPMIST && !user.isRestricted && !syncRef.current.loggedOut) {
@@ -76,11 +98,15 @@ const LiveClock = () => {
             }
 
             // 3. Update Work Duration
-            if (isEmployee) {
+            if (isStaff) {
                 setWorkDuration(prev => {
-                    // Only increment if on Wifi and not restricted
                     if (isOnWifi && !user?.isRestricted) {
-                        return prev + deltaSec;
+                        const nextVal = prev + deltaSec;
+                        if (user?.emp_no && Math.floor(nextVal) % 5 === 0) {
+                            sessionStorage.setItem(`work_duration_${user.emp_no}`, String(nextVal));
+                            sessionStorage.setItem(`work_duration_ts_${user.emp_no}`, String(Date.now()));
+                        }
+                        return nextVal;
                     }
                     return prev;
                 });
@@ -92,7 +118,7 @@ const LiveClock = () => {
             clearInterval(clockInterval);
             clearInterval(syncInterval);
         };
-    }, [user?.role, isOnWifi, user?.isRestricted]);
+    }, [user?.role, user?.emp_no, isOnWifi, user?.isRestricted]);
 
     const formatDuration = (totalSeconds) => {
         const hours = Math.floor(totalSeconds / 3600);
@@ -115,7 +141,7 @@ const LiveClock = () => {
                 </div>
             </div>
 
-            {isEmployee && (
+            {isStaff && (
                 <div className={`flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md border min-w-0 transition-colors ${isOnWifi && !user?.isRestricted ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                     <div className="flex flex-col min-w-0">
                         <span className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest leading-none mb-0.5 sm:mb-1 truncate ${isOnWifi && !user?.isRestricted ? 'text-green-600' : 'text-red-500'}`}>

@@ -43,7 +43,10 @@ const registerEmployee = async (req, res) => {
 // @route   POST /api/auth/login
 const loginEmployee = async (req, res) => {
     const { emp_no, password, device_info, wifi_ssid, face_descriptor } = req.body;
-    const cleanEmpNo = emp_no?.trim().toUpperCase();
+    const rawInput = emp_no?.trim();
+    const cleanEmpNo = rawInput?.toUpperCase();
+    const lowerInput = rawInput?.toLowerCase();
+    const digitsOnly = rawInput?.replace(/\D/g, '');
 
     try {
         console.log(`[AUTH] Login attempt: "${emp_no}" -> "${cleanEmpNo}"`);
@@ -51,7 +54,10 @@ const loginEmployee = async (req, res) => {
         const employee = await Employee.findOne({
             $or: [
                 { emp_no: cleanEmpNo },
-                { email: emp_no?.toLowerCase().trim() }
+                { email: lowerInput },
+                { personal_email: lowerInput },
+                { phone: rawInput },
+                ...(digitsOnly ? [{ phone: { $regex: digitsOnly } }] : [])
             ]
         });
 
@@ -407,7 +413,6 @@ const requestLoginPermission = async (req, res) => {
             device_info: device_info || 'Unknown'
         });
 
-        await loginRequest.save();
         res.status(201).json({ message: 'Login request submitted successfully. Please wait for admin approval.' });
     } catch (error) {
         console.error('Login Request Error:', error);
@@ -415,5 +420,110 @@ const requestLoginPermission = async (req, res) => {
     }
 };
 
-module.exports = { registerEmployee, loginEmployee, logoutEmployee, changePassword, requestLoginPermission };
+// @desc    Get logged-in user's full profile
+// @route   GET /api/auth/profile
+const getProfile = async (req, res) => {
+    try {
+        const { emp_no } = req.user;
+        const employee = await Employee.findOne({ emp_no });
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee profile not found' });
+        }
+
+        const profileData = {
+            id: employee._id,
+            emp_no: employee.emp_no,
+            name: employee.full_name || employee.name,
+            email: employee.email,
+            role: employee.role,
+            designation: employee.designation || 'Software Engineer',
+            department: employee.department || 'Engineering',
+            phone: employee.phone || '',
+            bio: employee.bio || '',
+            skills: employee.skills || ['JavaScript', 'React', 'Node.js'],
+            emergency_contact: employee.emergency_contact || '',
+            profile_photo: employee.profile_photo || '',
+            joining_date: employee.joining_date || employee.createdAt,
+            createdAt: employee.createdAt
+        };
+
+        res.json(profileData);
+    } catch (error) {
+        console.error('Get Profile Error:', error);
+        res.status(500).json({ message: 'Server error fetching profile' });
+    }
+};
+
+// @desc    Update logged-in user's profile & profile photo
+// @route   PUT /api/auth/profile
+const updateProfile = async (req, res) => {
+    try {
+        const { emp_no } = req.user;
+        const { name, phone, designation, department, bio, skills, emergency_contact, profile_photo_base64 } = req.body;
+
+        const employee = await Employee.findOne({ emp_no });
+        if (!employee) {
+            return res.status(404).json({ message: 'Employee profile not found' });
+        }
+
+        if (name) {
+            employee.name = name.trim();
+            employee.full_name = name.trim();
+        }
+        if (phone !== undefined) employee.phone = phone.trim();
+        if (designation !== undefined) employee.designation = designation.trim();
+        if (department !== undefined) employee.department = department.trim();
+        if (bio !== undefined) employee.bio = bio.trim();
+        if (emergency_contact !== undefined) employee.emergency_contact = emergency_contact.trim();
+
+        if (skills) {
+            employee.skills = Array.isArray(skills) 
+                ? skills 
+                : skills.split(',').map(s => s.trim()).filter(Boolean);
+        }
+
+        // Handle profile photo from file upload
+        if (req.file) {
+            employee.profile_photo = `/uploads/${req.file.filename}`;
+        } else if (profile_photo_base64) {
+            employee.profile_photo = profile_photo_base64;
+        }
+
+        await employee.save();
+
+        const updatedProfile = {
+            id: employee._id,
+            emp_no: employee.emp_no,
+            name: employee.full_name || employee.name,
+            email: employee.email,
+            role: employee.role,
+            designation: employee.designation || 'Software Engineer',
+            department: employee.department || 'Engineering',
+            phone: employee.phone || '',
+            bio: employee.bio || '',
+            skills: employee.skills || [],
+            emergency_contact: employee.emergency_contact || '',
+            profile_photo: employee.profile_photo || '',
+            joining_date: employee.joining_date || employee.createdAt
+        };
+
+        res.json({
+            message: 'Profile updated successfully',
+            user: updatedProfile
+        });
+    } catch (error) {
+        console.error('Update Profile Error:', error);
+        res.status(500).json({ message: 'Server error updating profile' });
+    }
+};
+
+module.exports = { 
+    registerEmployee, 
+    loginEmployee, 
+    logoutEmployee, 
+    changePassword, 
+    requestLoginPermission,
+    getProfile,
+    updateProfile
+};
 

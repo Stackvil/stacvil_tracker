@@ -39,8 +39,16 @@ router.get('/login-requests', protect, admin, getLoginRequests);
 router.post('/handle-login-request/:id', protect, admin, handleLoginRequest);
 router.post('/force-logout-all', protect, admin, forceLogoutAll);
 router.post('/force-logout/:emp_no', protect, admin, forceLogoutEmployee);
+const { 
+    getAllIntervalUpdates, 
+    rateIntervalUpdate, 
+    exportWorksheetsToExcel 
+} = require('../controllers/intervalUpdateController');
+
 router.get('/settings', protect, admin, getSettings);
 router.post('/settings', protect, admin, updateSettings);
-
+router.get('/interval-updates', protect, admin, getAllIntervalUpdates);
+router.put('/interval-updates/:id/rate', protect, admin, rateIntervalUpdate);
+router.get('/worksheets/export', protect, admin, exportWorksheetsToExcel);
 
 module.exports = router;

@@ -1,12 +1,15 @@
 [
   {
-    "office_wifi_ssid": "Your_Office_WiFi_Name",
+    "office_wifi_ssid": "Stackvil_Corporate_WiFi",
     "office_public_ip": "::1",
-    "is_wifi_restriction_enabled": true,
+    "is_wifi_restriction_enabled": false,
+    "office_start_time": "10:00",
+    "office_end_time": "19:00",
+    "shift_timing": "10:00 AM - 07:00 PM IST",
+    "allow_after_hours_login": true,
     "_id": "90f3ed5cd941806bb26ecaa0",
     "id": "90f3ed5cd941806bb26ecaa0",
     "createdAt": "2026-08-31T10:11:14.327Z",
-    "updatedAt": "2026-09-02T17:39:12.106Z",
-    "allow_after_hours_login": true
+    "updatedAt": "2026-09-09T16:50:00.000Z"
   }
 ]

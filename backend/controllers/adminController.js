@@ -741,11 +741,33 @@ const getMonthlyAttendance = async (req, res) => {
                     continue;
                 }
 
+                // Check if date is before employee joining date
+                let isPreJoining = false;
+                if (e.joining_date) {
+                    try {
+                        let joinYmd = '';
+                        if (e.joining_date.includes('.')) {
+                            const [jDay, jMonth, jYear] = e.joining_date.split('.');
+                            joinYmd = `${jYear}-${jMonth.padStart(2, '0')}-${jDay.padStart(2, '0')}`;
+                        } else if (e.joining_date.includes('-')) {
+                            joinYmd = e.joining_date;
+                        }
+                        if (joinYmd && currentDateStr < joinYmd) {
+                            isPreJoining = true;
+                        }
+                    } catch (jErr) {}
+                }
+
+                if (isPreJoining) {
+                    attendanceRecord[day] = '-';
+                    continue;
+                }
+
                 // Get all sessions for this day
                 const daySessions = empAttendances.filter(a => a.date === currentDateStr);
 
-                // If there is ANY record for this day with a manual_status, use it immediately
-                const manualRecord = daySessions.find(a => a.manual_status !== null);
+                // If there is ANY record for this day with a valid manual_status, use it immediately
+                const manualRecord = daySessions.find(a => a.manual_status != null && a.manual_status !== '');
                 if (manualRecord) {
                     attendanceRecord[day] = manualRecord.manual_status;
 
@@ -770,12 +792,10 @@ const getMonthlyAttendance = async (req, res) => {
                     // Calculate total duration for the day
                     let totalMs = 0;
                     daySessions.forEach(session => {
-                        let loginTime = new Date(session.login_time);
-                        // If logout is missing, check if it's today and past 7pm
-                        let logoutTime = null;
-                        if (session.logout_time) {
-                            logoutTime = new Date(session.logout_time);
-                        } else if (currentDateStr === todayDateStr && (new Date() > istTime.sevenPM || istTime.hour >= 19)) {
+                        let loginTime = session.login_time ? new Date(session.login_time) : null;
+                        let logoutTime = session.logout_time ? new Date(session.logout_time) : null;
+
+                        if (loginTime && !logoutTime && currentDateStr === todayDateStr && (new Date() > istTime.sevenPM || istTime.hour >= 19)) {
                             logoutTime = istTime.sevenPM;
                         }
 
@@ -783,16 +803,18 @@ const getMonthlyAttendance = async (req, res) => {
                             const effectiveLogout = (logoutTime > istTime.sevenPM && currentDateStr === todayDateStr) ? istTime.sevenPM : logoutTime;
                             let durationMs = effectiveLogout - loginTime;
                             if (durationMs > 0) totalMs += durationMs;
+                        } else if (session.session_status === 'Completed' || session.session_status === 'Active') {
+                            totalMs += 9 * 3600000;
                         }
                     });
 
-                    // Logic from existing half-day requirement: < 5 hours is Half Day
-                    if (totalMs > 0 && totalMs < 5 * 3600000) {
-                        attendanceRecord[day] = 'H'; // Half Day
-                        halfDayCount++;
-                    } else if (totalMs >= 5 * 3600000 || daySessions.some(s => !s.logout_time)) {
+                    // Logic: >= 5 hours or completed active session is Present, 0 < totalMs < 5 hours is Half Day
+                    if (totalMs >= 5 * 3600000 || daySessions.some(s => s.session_status === 'Completed' || s.session_status === 'Active')) {
                         attendanceRecord[day] = 'P'; // Present
                         presentCount++;
+                    } else if (totalMs > 0 && totalMs < 5 * 3600000) {
+                        attendanceRecord[day] = 'H'; // Half Day
+                        halfDayCount++;
                     } else {
                         attendanceRecord[day] = 'A'; // Absent
                         absentCount++;
@@ -947,6 +969,17 @@ const updateSettings = async (req, res) => {
         if (allow_after_hours_login !== undefined) settings.allow_after_hours_login = !!allow_after_hours_login;
 
         await settings.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('settings_updated_global', settings);
+            io.emit('admin_broadcast_notification', {
+                type: 'SETTINGS',
+                title: 'System Settings Updated',
+                message: 'Office network or hours settings updated by Admin'
+            });
+        }
+
         res.json({ message: 'Settings updated successfully', settings });
     } catch (error) {
         console.error('Error updating settings:', error);

@@ -1,0 +1,18 @@
+[
+  {
+    "emp_no": "EMPTEST",
+    "employeeName": "Alex Mercer",
+    "task_id": null,
+    "task_title": "Core Authentication Module",
+    "completion_percentage": 80,
+    "work_done": "Completed JWT auth endpoints and tested 30-min interval updates.",
+    "blockers": "None",
+    "next_plan": "Continue real-time document broadcasts.",
+    "date": "2026-09-09",
+    "timestamp": "2026-09-09T21:53:45+05:30",
+    "createdAt": "2026-09-09T21:53:45+05:30",
+    "_id": "3395cd71c2617cb34fe82d6a",
+    "id": "3395cd71c2617cb34fe82d6a",
+    "updatedAt": "2026-09-09T16:23:45.548Z"
+  }
+]

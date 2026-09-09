@@ -4,33 +4,21 @@ const { getISTTime } = require('./utilsController');
 
 // Helper to format attendance records
 const formatAttendanceRecords = (attendanceRows) => {
-    const istTime = getISTTime();
-    const sevenPMIST = istTime.sevenPM;
     const now = new Date();
 
     return attendanceRows.map(record => {
         let duration = null;
         const login = new Date(record.login_time);
+        let logout = record.logout_time ? new Date(record.logout_time) : (record.session_status === 'Active' ? now : null);
 
-        // Use logout_time if available, otherwise if it's past 7pm use 7pm, otherwise use current time
-        let logout = record.logout_time ? new Date(record.logout_time) : (now > sevenPMIST ? sevenPMIST : null);
-
-        if (login && logout) {
-            try {
-                if (!isNaN(login.getTime()) && !isNaN(logout.getTime())) {
-                    // Cap end time at 7 PM IST
-                    const effectiveLogout = logout > sevenPMIST ? sevenPMIST : logout;
-                    const diffMs = effectiveLogout - login;
-                    if (diffMs > 0) {
-                        const diffHrs = Math.floor(diffMs / 3600000);
-                        const diffMins = Math.floor((diffMs % 3600000) / 60000);
-                        duration = `${diffHrs}h ${diffMins}m`;
-                    } else {
-                        duration = "0h 0m";
-                    }
-                }
-            } catch (e) {
-                console.error('Duration calculation error:', e);
+        if (login && logout && !isNaN(login.getTime()) && !isNaN(logout.getTime())) {
+            const diffMs = logout - login;
+            if (diffMs > 0) {
+                const diffHrs = Math.floor(diffMs / 3600000);
+                const diffMins = Math.floor((diffMs % 3600000) / 60000);
+                duration = `${diffHrs}h ${diffMins}m`;
+            } else {
+                duration = "0h 0m";
             }
         }
         return {
@@ -39,8 +27,8 @@ const formatAttendanceRecords = (attendanceRows) => {
             login_time: record.login_time,
             logout_time: record.logout_time,
             date: record.date,
-            duration: duration || (record.login_time && !record.logout_time && now < sevenPMIST ? "Running" : (duration || "N/A")),
-            session_status: record.session_status || (record.logout_time ? 'Completed' : (now > sevenPMIST ? 'Frozen' : 'Active')),
+            duration: duration || (record.session_status === 'Active' ? "Running" : (duration || "N/A")),
+            session_status: record.session_status || (record.logout_time ? 'Completed' : 'Active'),
             logout_reason: record.logout_reason,
             device_info: record.device_info
         };
@@ -91,7 +79,6 @@ const getWorkDuration = async (req, res) => {
     try {
         const istTime = getISTTime();
         const today = istTime.date;
-        const sevenPMIST = istTime.sevenPM;
 
         // Find all attendance records for today
         const attendanceRows = await Attendance.find({
@@ -104,19 +91,17 @@ const getWorkDuration = async (req, res) => {
         }
 
         const now = new Date();
-        const effectiveNow = now > sevenPMIST ? sevenPMIST : now;
 
         const intervals = attendanceRows.map(record => {
             const start = new Date(record.login_time).getTime();
-            let end = record.logout_time ? new Date(record.logout_time).getTime() : effectiveNow.getTime();
+            let end = record.logout_time ? new Date(record.logout_time).getTime() : now.getTime();
 
-            // Cap start time if it was somehow after 7 PM (shouldn't happen but for safety)
-            const effectiveStart = Math.min(start, sevenPMIST.getTime());
-            // Cap end time at 7 PM IST
-            const effectiveEnd = Math.min(end, sevenPMIST.getTime());
+            if (isNaN(start) || isNaN(end) || end <= start) {
+                return null;
+            }
 
-            return { start: effectiveStart, end: effectiveEnd };
-        }).filter(interval => !isNaN(interval.start) && !isNaN(interval.end));
+            return { start, end };
+        }).filter(Boolean);
 
         if (intervals.length === 0) {
             return res.json({ totalMilliseconds: 0 });

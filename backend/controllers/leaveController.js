@@ -91,6 +91,22 @@ const updateLeaveStatus = async (req, res) => {
         leave.admin_note = admin_note || '';
         await leave.save();
 
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('leave_updated_global', { emp_no: leave.emp_no, status, leave });
+            io.to(leave.emp_no).emit('leave_status_changed', {
+                status,
+                admin_note: leave.admin_note,
+                message: `Your leave request for ${leave.start_date} was ${status}`
+            });
+            io.emit('admin_broadcast_notification', {
+                type: 'LEAVE',
+                title: 'Leave Status Updated',
+                message: `Leave request for ${leave.emp_no} was ${status}`,
+                emp_no: leave.emp_no
+            });
+        }
+
         res.json({ message: `Leave ${status} successfully`, leave });
     } catch (error) {
         console.error('Error updating leave status:', error);
@@ -119,6 +135,16 @@ const grantLeaveByAdmin = async (req, res) => {
         });
 
         await newLeave.save();
+
+        const io = req.app.get('io');
+        if (io) {
+            io.emit('leave_updated_global', { emp_no, status: 'approved', leave: newLeave });
+            io.to(emp_no).emit('leave_status_changed', {
+                status: 'approved',
+                message: `Admin granted leave from ${newLeave.start_date} to ${newLeave.end_date}`
+            });
+        }
+
         res.status(201).json({ message: 'Leave granted successfully', leave: newLeave });
     } catch (error) {
         console.error('Error granting leave:', error);

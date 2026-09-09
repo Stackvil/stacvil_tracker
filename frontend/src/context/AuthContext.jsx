@@ -1,6 +1,6 @@
 import React, { createContext, useState, useEffect } from 'react';
 import { io } from 'socket.io-client';
-import api from '../services/api';
+import api, { SOCKET_URL } from '../services/api';
 
 export const AuthContext = createContext();
 
@@ -68,7 +68,7 @@ export const AuthProvider = ({ children }) => {
     useEffect(() => {
         let newSocket;
         if (user && user.emp_no) {
-            newSocket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000');
+            newSocket = io(SOCKET_URL);
             setSocket(newSocket);
 
             newSocket.emit('join_room', user.emp_no);

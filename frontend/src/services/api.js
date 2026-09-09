@@ -1,13 +1,25 @@
 import axios from 'axios';
 
-// Always use relative /api path — same as production (https://track.stackvil.com/api/...)
-// In local dev, Vite proxy forwards /api/* → http://localhost:5000/api/*
-const API_URL = import.meta.env.VITE_API_URL || '/api';
+// Normalize API URL to always target /api correctly
+const getBaseApiUrl = () => {
+    let url = import.meta.env.VITE_API_URL || '/api';
+    // If it's a full URL without /api at the end, append /api
+    if (url.startsWith('http') && !url.includes('/api')) {
+        url = url.replace(/\/+$/, '') + '/api';
+    }
+    return url.replace(/\/+$/, '');
+};
+
+export const API_URL = getBaseApiUrl();
+
+export const SOCKET_URL = import.meta.env.VITE_SOCKET_URL || 
+    (API_URL.startsWith('http') ? API_URL.replace(/\/api\/?$/, '') : window.location.origin);
 
 const api = axios.create({
     baseURL: API_URL,
     headers: {
         'Content-Type': 'application/json',
+        'ngrok-skip-browser-warning': 'true'
     },
 });
 
