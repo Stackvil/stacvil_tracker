@@ -1397,5 +1397,16 @@
     "id": "9ebc3df9ca555b0093e1307a",
     "createdAt": "2026-09-10T06:33:26.922Z",
     "updatedAt": "2026-09-10T06:33:26.922Z"
+  },
+  {
+    "emp_no": "test",
+    "login_time": "2026-09-10T12:25:16+05:30",
+    "date": "2026-09-10",
+    "session_status": "Active",
+    "device_info": "Unknown Device",
+    "_id": "ab27618c5d5db935962af004",
+    "id": "ab27618c5d5db935962af004",
+    "createdAt": "2026-09-10T06:55:16.183Z",
+    "updatedAt": "2026-09-10T06:55:16.183Z"
   }
 ]

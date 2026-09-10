@@ -9,6 +9,9 @@ const getEmployeeTasks = async (req, res) => {
     try {
         const istTime = getISTTime();
         const today = istTime.date;
+        const now = new Date();
+        const istOptions = { timeZone: 'Asia/Kolkata', hour: '2-digit', minute: '2-digit', hour12: false };
+        const currentISTTime = new Intl.DateTimeFormat('en-GB', istOptions).format(now);
 
         const tasks = await Task.find({ emp_no }).sort({ due_date: 1 });
 
@@ -16,6 +19,8 @@ const getEmployeeTasks = async (req, res) => {
             let calculated_status = t.status;
             if (t.status === 'pending' || t.status === 'in_progress') {
                 if (t.due_date < today) {
+                    calculated_status = 'overdue';
+                } else if (t.due_date === today && t.end_time && currentISTTime > t.end_time) {
                     calculated_status = 'overdue';
                 }
             }
@@ -27,6 +32,8 @@ const getEmployeeTasks = async (req, res) => {
                 ...doc,
                 _id: t._id || t.id,
                 id: t._id || t.id,
+                start_time: t.start_time || '',
+                end_time: t.end_time || '',
                 calculated_status,
                 is_today,
                 is_overdue
@@ -132,7 +139,7 @@ const getTaskHistory = async (req, res) => {
 // @desc    Self-assign task (Employee added task)
 const createSelfAssignedTask = async (req, res) => {
     const { emp_no } = req.user;
-    const { title, description } = req.body;
+    const { title, description, start_time, end_time } = req.body;
 
     try {
         if (!title) {
@@ -147,6 +154,8 @@ const createSelfAssignedTask = async (req, res) => {
             task_type: 'daily', // Self-assigned are daily tasks for today
             assigned_date: today,
             due_date: today,
+            start_time: start_time || '',
+            end_time: end_time || '',
             title,
             description: description || '',
             completion_percentage: 0,

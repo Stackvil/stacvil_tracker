@@ -312,7 +312,7 @@ const createEmployee = async (req, res) => {
 
 // @desc    Assign task to employee (Admin only)
 const assignTask = async (req, res) => {
-    const { emp_no, title, description, task_type, due_date } = req.body;
+    const { emp_no, title, description, task_type, due_date, start_time, end_time } = req.body;
 
     try {
         if (!emp_no || !title || !task_type) {
@@ -337,6 +337,8 @@ const assignTask = async (req, res) => {
             task_type,
             assigned_date: today,
             due_date: finalDueDate,
+            start_time: start_time || '',
+            end_time: end_time || '',
             title,
             description: description || '',
             completion_percentage: 0,
@@ -349,7 +351,7 @@ const assignTask = async (req, res) => {
             io.to(emp_no).emit('task_updated', { message: 'New task assigned' });
             io.emit('task_updated_global');
         }
-        res.status(201).json({ message: 'Task assigned successfully' });
+        res.status(201).json({ message: 'Task assigned successfully', task });
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });
@@ -404,6 +406,8 @@ const getAdminTasks = async (req, res) => {
                 reason: t.reason,
                 assigned_date: t.assigned_date,
                 due_date: t.due_date,
+                start_time: t.start_time || '',
+                end_time: t.end_time || '',
                 completed_date: t.completed_date,
                 is_self_assigned: t.is_self_assigned,
                 created_at: t.createdAt

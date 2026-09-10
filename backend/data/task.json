@@ -53,7 +53,23 @@
     "_id": "854e097dbcc32b24386d388d",
     "id": "854e097dbcc32b24386d388d",
     "createdAt": "2026-09-10T06:32:51.920Z",
-    "updatedAt": "2026-09-10T06:39:09.541Z",
+    "updatedAt": "2026-09-10T06:53:45.246Z",
     "completed_date": "2026-09-10"
+  },
+  {
+    "emp_no": "test",
+    "task_type": "daily",
+    "assigned_date": "2026-09-10",
+    "due_date": "2026-09-10",
+    "start_time": "14:30",
+    "end_time": "15:30",
+    "title": "Feature Sprint Deliverable",
+    "description": "Complete the hourly task and verify timer countdown",
+    "completion_percentage": 0,
+    "status": "pending",
+    "_id": "ae75927327f6978ccb56cb2d",
+    "id": "ae75927327f6978ccb56cb2d",
+    "createdAt": "2026-09-10T06:56:14.867Z",
+    "updatedAt": "2026-09-10T06:56:14.867Z"
   }
 ]

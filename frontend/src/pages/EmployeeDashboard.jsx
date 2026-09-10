@@ -11,6 +11,112 @@ import { motion, AnimatePresence } from 'framer-motion';
 
 import { getNextWorksheetMilestone } from '../utils/milestones';
 
+// Helper to format HH:MM (24h) to 12h format
+const formatTime12 = (time24) => {
+    if (!time24) return '';
+    const [h, m] = time24.split(':').map(Number);
+    if (isNaN(h) || isNaN(m)) return time24;
+    const period = h >= 12 ? 'PM' : 'AM';
+    const hours12 = h % 12 || 12;
+    return `${hours12}:${String(m).padStart(2, '0')} ${period}`;
+};
+
+// Live Hourly Countdown Timer for Time-Bound Tasks
+const TaskHourlyTimer = ({ task }) => {
+    const [now, setNow] = useState(Date.now());
+
+    useEffect(() => {
+        const timer = setInterval(() => setNow(Date.now()), 1000);
+        return () => clearInterval(timer);
+    }, []);
+
+    if (!task.start_time && !task.end_time) {
+        return null;
+    }
+
+    const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+    const taskDate = task.due_date || task.assigned_date || todayStr;
+
+    const startMs = task.start_time ? new Date(`${taskDate}T${task.start_time}:00+05:30`).getTime() : null;
+    const endMs = task.end_time ? new Date(`${taskDate}T${task.end_time}:00+05:30`).getTime() : null;
+
+    const isUpcoming = startMs && now < startMs;
+    const isOverdue = endMs && now > endMs;
+    const isActive = (startMs ? now >= startMs : true) && (endMs ? now <= endMs : true);
+
+    let countdownText = '';
+    let progressPercent = 0;
+
+    if (isUpcoming) {
+        const diffSec = Math.max(0, Math.floor((startMs - now) / 1000));
+        const h = Math.floor(diffSec / 3600);
+        const m = Math.floor((diffSec % 3600) / 60);
+        const s = diffSec % 60;
+        countdownText = `Starts in ${h > 0 ? `${h}h ` : ''}${m}m ${s}s`;
+    } else if (isActive && endMs) {
+        const diffSec = Math.max(0, Math.floor((endMs - now) / 1000));
+        const h = Math.floor(diffSec / 3600);
+        const m = Math.floor((diffSec % 3600) / 60);
+        const s = diffSec % 60;
+        countdownText = `${h > 0 ? `${h}h ` : ''}${m}m ${s}s left`;
+
+        if (startMs && endMs > startMs) {
+            const total = endMs - startMs;
+            const elapsed = now - startMs;
+            progressPercent = Math.min(100, Math.max(0, (elapsed / total) * 100));
+        }
+    } else if (isOverdue) {
+        const diffSec = Math.floor((now - endMs) / 1000);
+        const h = Math.floor(diffSec / 3600);
+        const m = Math.floor((diffSec % 3600) / 60);
+        countdownText = `Time Expired · Overdue by ${h > 0 ? `${h}h ` : ''}${m}m`;
+        progressPercent = 100;
+    }
+
+    return (
+        <div className="space-y-1.5 pt-1.5">
+            <div className="flex items-center justify-between gap-2 flex-wrap">
+                <div className="flex items-center gap-1 font-mono text-[11px] font-bold text-gray-700 bg-gray-100/90 px-2 py-0.5 rounded-lg">
+                    <Clock className="w-3 h-3 text-indigo-600" />
+                    <span>
+                        {task.start_time ? formatTime12(task.start_time) : ''}
+                        {task.start_time && task.end_time ? ' – ' : ''}
+                        {task.end_time ? formatTime12(task.end_time) : ''}
+                    </span>
+                </div>
+
+                {countdownText && (
+                    <div className={`flex items-center gap-1.5 font-mono text-[10px] font-bold px-2.5 py-0.5 rounded-lg border transition-all ${
+                        isUpcoming
+                            ? 'bg-blue-50 text-blue-700 border-blue-200'
+                            : isActive
+                            ? 'bg-emerald-50 text-emerald-700 border-emerald-300 shadow-sm'
+                            : 'bg-rose-50 text-rose-700 border-rose-200'
+                    }`}>
+                        {isActive && <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-ping" />}
+                        {isOverdue && <AlertCircle className="w-3 h-3 text-rose-500" />}
+                        <span>{countdownText}</span>
+                    </div>
+                )}
+            </div>
+
+            {isActive && progressPercent > 0 && (
+                <div className="w-full bg-gray-100 rounded-full h-1.5 overflow-hidden">
+                    <div
+                        className="bg-emerald-500 h-full transition-all duration-1000 rounded-full shadow-sm"
+                        style={{ width: `${progressPercent}%` }}
+                    />
+                </div>
+            )}
+            {isOverdue && (
+                <div className="w-full bg-rose-100 rounded-full h-1 overflow-hidden">
+                    <div className="bg-rose-500 h-full rounded-full w-full" />
+                </div>
+            )}
+        </div>
+    );
+};
+
 const EmployeeDashboard = () => {
     const { user } = useContext(AuthContext);
     const isSupervisor = user?.emp_no === '202601' || user?.emp_no === '202602' || user?.role === 'manager' || user?.role === 'hr';
@@ -24,7 +130,7 @@ const EmployeeDashboard = () => {
 
     // Modals & Forms
     const [showAddTaskModal, setShowAddTaskModal] = useState(false);
-    const [newTask, setNewTask] = useState({ title: '', description: '' });
+    const [newTask, setNewTask] = useState({ title: '', description: '', start_time: '', end_time: '' });
     const [addTaskLoading, setAddTaskLoading] = useState(false);
     const [addTaskError, setAddTaskError] = useState('');
 
@@ -133,12 +239,17 @@ const EmployeeDashboard = () => {
             return;
         }
 
+        if (newTask.start_time && newTask.end_time && newTask.start_time >= newTask.end_time) {
+            setAddTaskError('End time must be after start time');
+            return;
+        }
+
         setAddTaskLoading(true);
         setAddTaskError('');
 
         try {
             await api.post('/tasks/self-assign', newTask);
-            setNewTask({ title: '', description: '' });
+            setNewTask({ title: '', description: '', start_time: '', end_time: '' });
             setShowAddTaskModal(false);
             fetchTasks();
         } catch (error) {
@@ -259,10 +370,16 @@ const EmployeeDashboard = () => {
                                         {task.description && (
                                             <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed">{task.description}</p>
                                         )}
+                                        <TaskHourlyTimer task={task} />
                                     </div>
 
                                     <div className="flex items-center justify-between pt-3 border-t border-gray-100 text-xs">
-                                        <span className="font-mono text-gray-400 text-[10px]">Due: {task.due_date || 'Today'}</span>
+                                        <div className="flex items-center gap-1.5 font-mono text-gray-400 text-[10px] flex-wrap">
+                                            <span>Due: {task.due_date || 'Today'}</span>
+                                            {task.start_time && task.end_time && (
+                                                <span className="text-indigo-600 font-semibold">· {formatTime12(task.start_time)} – {formatTime12(task.end_time)}</span>
+                                            )}
+                                        </div>
                                         <div className="flex gap-2">
                                             <button
                                                 onClick={() => handleCompleteTask(task._id)}
@@ -292,9 +409,15 @@ const EmployeeDashboard = () => {
                                     <div className="space-y-1">
                                         <h3 className="font-bold text-rose-900 text-sm">{task.title}</h3>
                                         <p className="text-xs text-rose-700 line-clamp-2">{task.description}</p>
+                                        <TaskHourlyTimer task={task} />
                                     </div>
                                     <div className="flex items-center justify-between pt-2 border-t border-rose-100">
-                                        <span className="font-mono text-rose-600 text-[10px]">Overdue Date: {task.due_date}</span>
+                                        <div className="flex items-center gap-1.5 font-mono text-rose-600 text-[10px] flex-wrap">
+                                            <span>Overdue Date: {task.due_date}</span>
+                                            {task.start_time && task.end_time && (
+                                                <span className="font-semibold">· {formatTime12(task.start_time)} – {formatTime12(task.end_time)}</span>
+                                            )}
+                                        </div>
                                         <button
                                             onClick={() => handleCompleteTask(task._id)}
                                             className="px-3 py-1 bg-rose-600 hover:bg-rose-700 text-white rounded-lg text-xs font-bold"
@@ -378,6 +501,26 @@ const EmployeeDashboard = () => {
                                         onChange={(e) => setNewTask({ ...newTask, description: e.target.value })}
                                         className="w-full px-3.5 py-2.5 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none resize-none"
                                     />
+                                </div>
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-gray-700 mb-1">From Time (Optional)</label>
+                                        <input
+                                            type="time"
+                                            value={newTask.start_time}
+                                            onChange={(e) => setNewTask({ ...newTask, start_time: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none font-mono"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-bold text-gray-700 mb-1">To Time (Optional)</label>
+                                        <input
+                                            type="time"
+                                            value={newTask.end_time}
+                                            onChange={(e) => setNewTask({ ...newTask, end_time: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none font-mono"
+                                        />
+                                    </div>
                                 </div>
                                 <div className="flex gap-2 pt-2">
                                     <button

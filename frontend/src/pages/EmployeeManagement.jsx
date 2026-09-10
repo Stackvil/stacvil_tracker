@@ -21,12 +21,24 @@ const EmployeeManagement = () => {
         face_descriptor: [], is_face_enabled: false, is_wifi_login_enabled: true
     });
 
-    // Simplified assign form — no dates, no percentage
+    // Helper to format HH:MM (24h) to 12h format
+    const formatTime12 = (time24) => {
+        if (!time24) return '';
+        const [h, m] = time24.split(':').map(Number);
+        if (isNaN(h) || isNaN(m)) return time24;
+        const period = h >= 12 ? 'PM' : 'AM';
+        const hours12 = h % 12 || 12;
+        return `${hours12}:${String(m).padStart(2, '0')} ${period}`;
+    };
+
+    // Task assign form with optional hourly time window
     const [assignForm, setAssignForm] = useState({
         title: '',
         description: '',
         task_type: 'daily', // 'daily' or 'custom'
-        due_date: ''
+        due_date: '',
+        start_time: '',
+        end_time: ''
     });
 
     const [error, setError] = useState('');
@@ -107,11 +119,16 @@ const EmployeeManagement = () => {
             return;
         }
 
+        if (assignForm.start_time && assignForm.end_time && assignForm.start_time >= assignForm.end_time) {
+            setError('End time must be after start time (e.g., 2:30 PM to 3:30 PM)');
+            return;
+        }
+
         try {
             await api.post('/admin/tasks/assign', { ...assignForm, emp_no });
             setSuccess('Task assigned successfully!');
             setShowAssignModal(null);
-            setAssignForm({ title: '', description: '', task_type: 'daily', due_date: '' });
+            setAssignForm({ title: '', description: '', task_type: 'daily', due_date: '', start_time: '', end_time: '' });
             fetchAdminTasks();
             setTimeout(() => setSuccess(''), 3000);
         } catch (err) {
@@ -428,8 +445,14 @@ const EmployeeManagement = () => {
                                                             </span>
                                                         )}
                                                     </div>
-                                                    <p className="text-[11px] text-gray-500 italic mb-1">
-                                                        {task.emp_name} · Due: {task.due_date}
+                                                    <p className="text-[11px] text-gray-500 italic mb-1 flex items-center gap-2 flex-wrap">
+                                                        <span>{task.emp_name} · Due: {task.due_date}</span>
+                                                        {(task.start_time || task.end_time) && (
+                                                            <span className="font-mono font-bold px-2 py-0.5 rounded-md bg-indigo-50 text-indigo-700 border border-indigo-100 text-[10px] flex items-center gap-1 not-italic">
+                                                                <Clock className="w-3 h-3 text-indigo-500" />
+                                                                {formatTime12(task.start_time)} – {formatTime12(task.end_time)}
+                                                            </span>
+                                                        )}
                                                     </p>
                                                     {task.description && (
                                                         <p className="text-xs text-gray-500 line-clamp-1">{task.description}</p>
@@ -618,6 +641,101 @@ const EmployeeManagement = () => {
                                     />
                                 </div>
                             )}
+
+                            {/* Hourly Time Window / Timer Schedule */}
+                            <div className="bg-gray-50/90 p-4 rounded-2xl border border-gray-200/80 space-y-3">
+                                <div className="flex items-center justify-between">
+                                    <label className="text-xs font-bold text-gray-800 flex items-center gap-1.5">
+                                        <Clock className="w-4 h-4 text-indigo-600" />
+                                        <span>Time Window (Hour-wise Timer)</span>
+                                    </label>
+                                    <span className="text-[10px] text-gray-400 font-semibold">Optional</span>
+                                </div>
+
+                                <div className="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">From Time</label>
+                                        <input
+                                            type="time"
+                                            value={assignForm.start_time}
+                                            onChange={(e) => setAssignForm({ ...assignForm, start_time: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-mono"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="block text-[11px] font-semibold text-gray-600 mb-1">To Time</label>
+                                        <input
+                                            type="time"
+                                            value={assignForm.end_time}
+                                            onChange={(e) => setAssignForm({ ...assignForm, end_time: e.target.value })}
+                                            className="w-full px-3 py-2 border border-gray-200 rounded-xl text-xs focus:ring-2 focus:ring-indigo-500 outline-none bg-white font-mono"
+                                        />
+                                    </div>
+                                </div>
+
+                                {/* Presets */}
+                                <div className="flex items-center gap-1.5 flex-wrap pt-1">
+                                    <span className="text-[10px] text-gray-400 font-bold uppercase mr-1">Presets:</span>
+                                    <button
+                                        type="button"
+                                        onClick={() => {
+                                            const now = new Date();
+                                            const pad = (n) => String(n).padStart(2, '0');
+                                            const start = `${pad(now.getHours())}:${pad(now.getMinutes())}`;
+                                            const endHour = (now.getHours() + 1) % 24;
+                                            const end = `${pad(endHour)}:${pad(now.getMinutes())}`;
+                                            setAssignForm({ ...assignForm, start_time: start, end_time: end });
+                                        }}
+                                        className="px-2 py-1 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-lg text-[10px] font-semibold text-gray-700 transition-colors"
+                                    >
+                                        +1 Hour (From Now)
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAssignForm({ ...assignForm, start_time: '14:30', end_time: '15:30' })}
+                                        className="px-2 py-1 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-lg text-[10px] font-semibold text-gray-700 transition-colors"
+                                    >
+                                        2:30 PM - 3:30 PM
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAssignForm({ ...assignForm, start_time: '10:00', end_time: '13:00' })}
+                                        className="px-2 py-1 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-lg text-[10px] font-semibold text-gray-700 transition-colors"
+                                    >
+                                        10 AM - 1 PM
+                                    </button>
+                                    <button
+                                        type="button"
+                                        onClick={() => setAssignForm({ ...assignForm, start_time: '14:00', end_time: '17:00' })}
+                                        className="px-2 py-1 bg-white hover:bg-indigo-50 border border-gray-200 hover:border-indigo-300 rounded-lg text-[10px] font-semibold text-gray-700 transition-colors"
+                                    >
+                                        2 PM - 5 PM
+                                    </button>
+                                    {(assignForm.start_time || assignForm.end_time) && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setAssignForm({ ...assignForm, start_time: '', end_time: '' })}
+                                            className="px-2 py-1 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg text-[10px] font-semibold transition-colors"
+                                        >
+                                            Clear Times
+                                        </button>
+                                    )}
+                                </div>
+
+                                {assignForm.start_time && assignForm.end_time && (
+                                    <div className="text-[11px] font-semibold text-indigo-700 bg-indigo-50/80 px-2.5 py-1.5 rounded-lg border border-indigo-100 flex items-center justify-between">
+                                        <span>Scheduled: {formatTime12(assignForm.start_time)} – {formatTime12(assignForm.end_time)}</span>
+                                        <span className="text-[10px] text-indigo-500 font-mono">
+                                            {(() => {
+                                                const [h1, m1] = assignForm.start_time.split(':').map(Number);
+                                                const [h2, m2] = assignForm.end_time.split(':').map(Number);
+                                                const mins = (h2 * 60 + m2) - (h1 * 60 + m1);
+                                                return mins > 0 ? `${mins} mins duration` : '';
+                                            })()}
+                                        </span>
+                                    </div>
+                                )}
+                            </div>
 
                             <div>
                                 <label className="block text-sm font-semibold text-gray-700 mb-1">Task Title</label>

@@ -1,7 +1,7 @@
 [
   {
     "office_wifi_ssid": "KuretiA102",
-    "office_public_ip": "::1",
+    "office_public_ip": "49.205.103.167",
     "is_wifi_restriction_enabled": false,
     "office_start_time": "10:00",
     "office_end_time": "19:00",
@@ -10,6 +10,6 @@
     "_id": "90f3ed5cd941806bb26ecaa0",
     "id": "90f3ed5cd941806bb26ecaa0",
     "createdAt": "2026-08-31T10:11:14.327Z",
-    "updatedAt": "2026-09-10T06:09:31.898Z"
+    "updatedAt": "2026-09-10T06:53:11.815Z"
   }
 ]
