@@ -57,30 +57,80 @@ const getEmployees = async (req, res) => {
             );
         }
 
-        const activeAttendance = isPastSevenPM
-            ? []
-            : await Attendance.find({ date: today, logout_time: null });
+        // Fetch all attendance records for today to determine active sessions & today's first login time
+        const todayAttendance = await Attendance.find({ date: today });
         
-        const activeSessionMap = activeAttendance.reduce((acc, a) => {
-            acc[a.emp_no] = { is_on_wifi: a.is_on_wifi };
-            return acc;
-        }, {});
+        const activeSessionMap = {};
+        const firstLoginMap = {};
 
-        const result = employees.map(e => ({
-            id: e._id,
-            emp_no: e.emp_no,
-            name: e.name,
-            full_name: e.full_name,
-            profile_picture: e.profile_picture,
-            email: e.email,
-            role: e.role,
-            status: activeSessionMap[e.emp_no] ? 'active' : 'inactive',
-            presence_status: e.presence_status || 'offline',
-            is_on_wifi: activeSessionMap[e.emp_no]?.is_on_wifi || false,
-            is_face_enabled: e.is_face_enabled,
-            has_face_descriptor: e.face_descriptor && e.face_descriptor.length > 0,
-            is_wifi_login_enabled: e.is_wifi_login_enabled
-        }));
+        const formatLoginTime = (iso) => {
+            if (!iso) return null;
+            try {
+                return new Date(iso).toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit',
+                    hour12: true,
+                    timeZone: 'Asia/Kolkata'
+                });
+            } catch (err) {
+                return null;
+            }
+        };
+
+        todayAttendance.forEach(a => {
+            // Track active status if not past 7 PM
+            if (!isPastSevenPM && !a.logout_time) {
+                activeSessionMap[a.emp_no] = { is_on_wifi: a.is_on_wifi };
+            }
+
+            // Calculate first (earliest) login time today
+            if (a.login_time && a.logout_reason !== 'System Override / Empty Day') {
+                const aTime = new Date(a.login_time).getTime();
+                if (!isNaN(aTime)) {
+                    if (!firstLoginMap[a.emp_no] || aTime < firstLoginMap[a.emp_no].timestamp) {
+                        firstLoginMap[a.emp_no] = {
+                            timestamp: aTime,
+                            timeFormatted: formatLoginTime(a.login_time),
+                            raw: a.login_time
+                        };
+                    }
+                }
+            }
+        });
+
+        const result = employees.map(e => {
+            // Fallback: check if employee.login_time happened today
+            let firstLogin = firstLoginMap[e.emp_no]?.timeFormatted || null;
+            let firstLoginRaw = firstLoginMap[e.emp_no]?.raw || null;
+            if (!firstLogin && e.login_time) {
+                const empLoginTime = new Date(e.login_time);
+                if (!isNaN(empLoginTime.getTime())) {
+                    const empLoginDate = empLoginTime.toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
+                    if (empLoginDate === today) {
+                        firstLogin = formatLoginTime(e.login_time);
+                        firstLoginRaw = e.login_time;
+                    }
+                }
+            }
+
+            return {
+                id: e._id,
+                emp_no: e.emp_no,
+                name: e.name,
+                full_name: e.full_name,
+                profile_picture: e.profile_picture,
+                email: e.email,
+                role: e.role,
+                status: activeSessionMap[e.emp_no] ? 'active' : 'inactive',
+                presence_status: e.presence_status || 'offline',
+                is_on_wifi: activeSessionMap[e.emp_no]?.is_on_wifi || false,
+                is_face_enabled: e.is_face_enabled,
+                has_face_descriptor: e.face_descriptor && e.face_descriptor.length > 0,
+                is_wifi_login_enabled: e.is_wifi_login_enabled,
+                first_login_time: firstLogin,
+                first_login_raw: firstLoginRaw
+            };
+        });
 
         res.json(result);
     } catch (error) {

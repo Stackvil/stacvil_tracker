@@ -319,6 +319,22 @@ const EmployeeManagement = () => {
                                     <Shield className="w-4 h-4 text-gray-400 shrink-0" />
                                     <span className="capitalize">{emp.role}</span>
                                 </div>
+                                <div className="flex items-center gap-3 text-sm text-gray-600 pt-2 border-t border-gray-100">
+                                    <Clock className="w-4 h-4 text-indigo-500 shrink-0" />
+                                    <div className="flex items-center justify-between w-full">
+                                        <span className="text-xs font-semibold text-gray-500">First Login:</span>
+                                        {emp.first_login_time ? (
+                                            <span className="text-xs font-bold text-emerald-700 bg-emerald-50 border border-emerald-200/80 px-2 py-0.5 rounded-md flex items-center gap-1.5 shadow-xs">
+                                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                                {emp.first_login_time}
+                                            </span>
+                                        ) : (
+                                            <span className="text-[11px] font-medium text-gray-400 bg-gray-50 border border-gray-200 px-2 py-0.5 rounded-md">
+                                                Not Logged In Today
+                                            </span>
+                                        )}
+                                    </div>
+                                </div>
                             </div>
                         </div>
                         <div className="px-6 py-4 bg-gray-50 border-t border-gray-100 flex flex-wrap justify-between gap-2">

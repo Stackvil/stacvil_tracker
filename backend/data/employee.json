@@ -160,12 +160,12 @@
     "_id": "63b892c0d88b247ebb1c202607",
     "id": "63b892c0d88b247ebb1c202607",
     "createdAt": "2026-09-01T04:30:00.000Z",
-    "updatedAt": "2026-09-10T07:10:16.406Z",
+    "updatedAt": "2026-09-10T07:15:37.378Z",
     "personal_email": "guntaputejaswini1@gmail.com",
     "bank_ifsc": "SBIN0021032",
     "bank_account_no": "43302045837",
-    "last_seen": "2026-09-10T07:10:16.405Z",
-    "presence_status": "online"
+    "last_seen": "2026-09-10T07:14:16.296Z",
+    "presence_status": "offline"
   },
   {
     "emp_no": "202608",
@@ -192,12 +192,12 @@
     "_id": "63b892c0d88b247ebb1c202608",
     "id": "63b892c0d88b247ebb1c202608",
     "createdAt": "2026-09-01T04:30:00.000Z",
-    "updatedAt": "2026-09-10T07:09:58.161Z",
+    "updatedAt": "2026-09-10T07:31:07.614Z",
     "personal_email": "gurrala.varun11@gmail.com",
     "bank_ifsc": "IDIB000R093",
     "bank_account_no": "7508066567",
-    "last_seen": "2026-09-10T07:09:58.161Z",
-    "presence_status": "online"
+    "last_seen": "2026-09-10T07:29:58.186Z",
+    "presence_status": "offline"
   },
   {
     "emp_no": "202609",
@@ -254,11 +254,11 @@
     "_id": "63b892c0d88b247ebb1c202610",
     "id": "63b892c0d88b247ebb1c202610",
     "createdAt": "2026-09-01T04:30:00.000Z",
-    "updatedAt": "2026-09-10T07:10:26.074Z",
+    "updatedAt": "2026-09-10T08:25:00.293Z",
     "personal_email": "Surandervyas897@gmail.com",
     "bank_ifsc": "SBIN0021032",
     "bank_account_no": "40742118750",
-    "last_seen": "2026-09-10T07:10:26.073Z",
+    "last_seen": "2026-09-10T08:25:00.292Z",
     "presence_status": "online"
   },
   {
