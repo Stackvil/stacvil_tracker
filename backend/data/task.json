@@ -1,1 +1,58 @@
-[]
+[
+  {
+    "emp_no": "202610",
+    "task_type": "daily",
+    "assigned_date": "2026-09-10",
+    "due_date": "2026-09-10",
+    "title": "tata motors frontend and backend ",
+    "description": "complete the full project with crud properties and submit screenshots in portal by 1pm",
+    "completion_percentage": 0,
+    "status": "pending",
+    "_id": "cc6022aeb6c6a57e226a77a3",
+    "id": "cc6022aeb6c6a57e226a77a3",
+    "createdAt": "2026-09-10T06:12:12.120Z",
+    "updatedAt": "2026-09-10T06:12:12.120Z"
+  },
+  {
+    "emp_no": "202607",
+    "task_type": "daily",
+    "assigned_date": "2026-09-10",
+    "due_date": "2026-09-10",
+    "title": "complete tata motors project",
+    "description": "complete the full project with crud properties and submit screenshots in portal by 1pm",
+    "completion_percentage": 0,
+    "status": "pending",
+    "_id": "23d50ce47a0f294247947cb3",
+    "id": "23d50ce47a0f294247947cb3",
+    "createdAt": "2026-09-10T06:12:27.067Z",
+    "updatedAt": "2026-09-10T06:12:27.067Z"
+  },
+  {
+    "emp_no": "202608",
+    "task_type": "daily",
+    "assigned_date": "2026-09-10",
+    "due_date": "2026-09-10",
+    "title": "payment gateway update",
+    "description": "submit payment gateway how to handle situation while the forms are from sbi epay\n",
+    "completion_percentage": 0,
+    "status": "pending",
+    "_id": "e8a5e08e55c73308144e1b30",
+    "id": "e8a5e08e55c73308144e1b30",
+    "createdAt": "2026-09-10T06:13:15.245Z",
+    "updatedAt": "2026-09-10T06:13:15.245Z"
+  },
+  {
+    "emp_no": "test",
+    "task_type": "daily",
+    "assigned_date": "2026-09-10",
+    "due_date": "2026-09-10",
+    "title": "sumit ",
+    "description": "assign",
+    "completion_percentage": 0,
+    "status": "pending",
+    "_id": "854e097dbcc32b24386d388d",
+    "id": "854e097dbcc32b24386d388d",
+    "createdAt": "2026-09-10T06:32:51.920Z",
+    "updatedAt": "2026-09-10T06:37:50.845Z"
+  }
+]

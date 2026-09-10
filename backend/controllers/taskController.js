@@ -60,7 +60,10 @@ const updateTaskStatus = async (req, res) => {
     const { action, completion_percentage, reason } = req.body;
 
     try {
-        const task = await Task.findOne({ _id: id, emp_no });
+        const query = (req.user && req.user.role === 'admin')
+            ? { _id: id }
+            : { _id: id, emp_no };
+        const task = await Task.findOne(query);
         if (!task) {
             return res.status(404).json({ message: 'Task not found' });
         }
@@ -69,16 +72,17 @@ const updateTaskStatus = async (req, res) => {
             return res.status(400).json({ message: 'Cannot modify a finalized task' });
         }
 
-        if (action === 'accept') {
+        if (action === 'complete' || action === 'completed' || action === 'done') {
+            task.status = 'completed';
+            task.completion_percentage = 100;
+            task.completed_date = getISTTime().date;
+        } else if (action === 'accept' || action === 'in_progress' || action === 'start') {
             task.status = 'in_progress';
         } else if (action === 'decline') {
             if (!reason) return res.status(400).json({ message: 'Reason required' });
             task.status = 'declined';
             task.reason = reason;
         } else if (action === 'update_progress') {
-            if (task.status !== 'in_progress') {
-                return res.status(400).json({ message: 'Accept task first' });
-            }
             const pct = parseInt(completion_percentage);
             if (isNaN(pct) || pct < 0 || pct > 100) {
                 return res.status(400).json({ message: 'Invalid percentage' });
@@ -87,6 +91,8 @@ const updateTaskStatus = async (req, res) => {
             if (pct === 100) {
                 task.status = 'completed';
                 task.completed_date = getISTTime().date;
+            } else if (task.status === 'pending') {
+                task.status = 'in_progress';
             }
         } else {
             return res.status(400).json({ message: 'Invalid action' });
