@@ -5,6 +5,9 @@
     <link rel="icon" type="image/jpeg" href="/stackvil-logo.jpeg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Stackvil Technologies</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
+    <meta http-equiv="Pragma" content="no-cache" />
+    <meta http-equiv="Expires" content="0" />
 
     <!-- Synchronous Native Auth Handoff -->
     <script>
@@ -23,6 +26,22 @@
           window.history.replaceState({ path: cleanUrl }, '', cleanUrl);
         }
       })();
+
+      // Auto-reload on chunk mismatch after new deployment
+      window.addEventListener('vite:preloadError', function() {
+        window.location.reload();
+      });
+      window.addEventListener('error', function(e) {
+        if (e && e.target && e.target.tagName === 'SCRIPT' && e.target.src && e.target.src.indexOf('/assets/') !== -1) {
+          if (!sessionStorage.getItem('chunk_reload_done')) {
+            sessionStorage.setItem('chunk_reload_done', 'true');
+            window.location.reload();
+          }
+        }
+      }, true);
+      window.addEventListener('load', function() {
+        sessionStorage.removeItem('chunk_reload_done');
+      });
     </script>
   </head>
   <body>
