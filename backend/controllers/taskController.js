@@ -20,22 +20,33 @@ const getEmployeeTasks = async (req, res) => {
                 }
             }
             const doc = t._doc ? t._doc : (typeof t.toObject === 'function' ? t.toObject() : JSON.parse(JSON.stringify(t)));
+            const is_today = (t.due_date === today || t.assigned_date === today) && !['completed', 'declined'].includes(calculated_status);
+            const is_overdue = calculated_status === 'overdue';
+
             return {
                 ...doc,
+                _id: t._id || t.id,
                 id: t._id || t.id,
-                calculated_status
+                calculated_status,
+                is_today,
+                is_overdue
             };
         });
 
-        const groupedTasks = {
-            today: normalizedTasks.filter(t => (t.due_date === today || t.calculated_status === 'overdue') && !['completed', 'declined'].includes(t.calculated_status)),
-            pending: normalizedTasks.filter(t => t.due_date > today && !['completed', 'declined'].includes(t.calculated_status)),
-            overdue: normalizedTasks.filter(t => t.calculated_status === 'overdue'),
-            declined: normalizedTasks.filter(t => t.calculated_status === 'declined'),
-            completed: normalizedTasks.filter(t => t.calculated_status === 'completed')
-        };
+        // If client specifically asks for grouped structure
+        if (req.query.grouped === 'true') {
+            const groupedTasks = {
+                today: normalizedTasks.filter(t => (t.due_date === today || t.calculated_status === 'overdue') && !['completed', 'declined'].includes(t.calculated_status)),
+                pending: normalizedTasks.filter(t => t.due_date > today && !['completed', 'declined'].includes(t.calculated_status)),
+                overdue: normalizedTasks.filter(t => t.calculated_status === 'overdue'),
+                declined: normalizedTasks.filter(t => t.calculated_status === 'declined'),
+                completed: normalizedTasks.filter(t => t.calculated_status === 'completed')
+            };
+            return res.json(groupedTasks);
+        }
 
-        res.json(groupedTasks);
+        // Default: return array of tasks with flags so Array.forEach and Array.isArray work cleanly in all views
+        res.json(normalizedTasks);
     } catch (error) {
         console.error(error);
         res.status(500).json({ message: 'Server error' });

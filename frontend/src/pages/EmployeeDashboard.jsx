@@ -47,7 +47,21 @@ const EmployeeDashboard = () => {
         try {
             setLoading(true);
             const res = await api.get('/tasks/employee');
-            const tasks = res.data || [];
+
+            // If backend already grouped them:
+            if (res.data && !Array.isArray(res.data) && (res.data.today || res.data.pending)) {
+                setGroupedTasks({
+                    today: res.data.today || [],
+                    pending: res.data.pending || [],
+                    overdue: res.data.overdue || [],
+                    declined: res.data.declined || [],
+                    completed: res.data.completed || []
+                });
+                return;
+            }
+
+            const tasks = Array.isArray(res.data) ? res.data : [];
+            const todayStr = new Date().toLocaleDateString('en-CA', { timeZone: 'Asia/Kolkata' });
 
             const grouped = {
                 today: [],
@@ -58,13 +72,16 @@ const EmployeeDashboard = () => {
             };
 
             tasks.forEach(task => {
+                const isOverdue = task.is_overdue || (task.due_date < todayStr && !['completed', 'declined'].includes(task.status));
+                const isToday = task.is_today || (task.due_date === todayStr || task.assigned_date === todayStr);
+
                 if (task.status === 'completed') {
                     grouped.completed.push(task);
                 } else if (task.status === 'declined') {
                     grouped.declined.push(task);
-                } else if (task.is_overdue) {
+                } else if (isOverdue) {
                     grouped.overdue.push(task);
-                } else if (task.is_today) {
+                } else if (isToday) {
                     grouped.today.push(task);
                 } else {
                     grouped.pending.push(task);
