@@ -160,10 +160,12 @@
     "_id": "63b892c0d88b247ebb1c202607",
     "id": "63b892c0d88b247ebb1c202607",
     "createdAt": "2026-09-01T04:30:00.000Z",
-    "updatedAt": "2026-09-09T17:15:00.000Z",
+    "updatedAt": "2026-09-10T06:43:16.328Z",
     "personal_email": "guntaputejaswini1@gmail.com",
     "bank_ifsc": "SBIN0021032",
-    "bank_account_no": "43302045837"
+    "bank_account_no": "43302045837",
+    "last_seen": "2026-09-10T06:43:16.327Z",
+    "presence_status": "online"
   },
   {
     "emp_no": "202608",
@@ -190,10 +192,12 @@
     "_id": "63b892c0d88b247ebb1c202608",
     "id": "63b892c0d88b247ebb1c202608",
     "createdAt": "2026-09-01T04:30:00.000Z",
-    "updatedAt": "2026-09-09T17:15:00.000Z",
+    "updatedAt": "2026-09-10T06:43:58.418Z",
     "personal_email": "gurrala.varun11@gmail.com",
     "bank_ifsc": "IDIB000R093",
-    "bank_account_no": "7508066567"
+    "bank_account_no": "7508066567",
+    "last_seen": "2026-09-10T06:43:58.417Z",
+    "presence_status": "online"
   },
   {
     "emp_no": "202609",
@@ -250,10 +254,12 @@
     "_id": "63b892c0d88b247ebb1c202610",
     "id": "63b892c0d88b247ebb1c202610",
     "createdAt": "2026-09-01T04:30:00.000Z",
-    "updatedAt": "2026-09-09T17:15:00.000Z",
+    "updatedAt": "2026-09-10T06:44:01.899Z",
     "personal_email": "Surandervyas897@gmail.com",
     "bank_ifsc": "SBIN0021032",
-    "bank_account_no": "40742118750"
+    "bank_account_no": "40742118750",
+    "last_seen": "2026-09-10T06:44:01.899Z",
+    "presence_status": "online"
   },
   {
     "emp_no": "202611",
@@ -283,5 +289,22 @@
     "personal_email": "Mamillapallilakshmimahitha@gmail.com",
     "bank_ifsc": "UBIN0804258",
     "bank_account_no": "42510100125315"
+  },
+  {
+    "emp_no": "test",
+    "name": "test",
+    "full_name": "test",
+    "email": "test@gmail.com",
+    "password": "$2a$10$shQFo.ASJuQF/YsiA/Lo4Ok.mbyjKF5jzI52RBRqrGzJdbutLE5aS",
+    "role": "employee",
+    "face_descriptor": [],
+    "is_face_enabled": false,
+    "is_wifi_login_enabled": false,
+    "_id": "1b6a8a910881abe82e60a477",
+    "id": "1b6a8a910881abe82e60a477",
+    "createdAt": "2026-09-10T06:32:33.360Z",
+    "updatedAt": "2026-09-10T06:43:44.281Z",
+    "last_seen": "2026-09-10T06:43:44.280Z",
+    "presence_status": "online"
   }
 ]

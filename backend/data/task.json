@@ -48,11 +48,12 @@
     "due_date": "2026-09-10",
     "title": "sumit ",
     "description": "assign",
-    "completion_percentage": 0,
-    "status": "pending",
+    "completion_percentage": 100,
+    "status": "completed",
     "_id": "854e097dbcc32b24386d388d",
     "id": "854e097dbcc32b24386d388d",
     "createdAt": "2026-09-10T06:32:51.920Z",
-    "updatedAt": "2026-09-10T06:37:50.845Z"
+    "updatedAt": "2026-09-10T06:39:09.541Z",
+    "completed_date": "2026-09-10"
   }
 ]

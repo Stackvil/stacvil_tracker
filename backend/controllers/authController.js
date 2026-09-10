@@ -444,6 +444,7 @@ const getProfile = async (req, res) => {
             emergency_contact: employee.emergency_contact || '',
             profile_photo: employee.profile_photo || '',
             joining_date: employee.joining_date || employee.createdAt,
+            is_wifi_login_enabled: employee.is_wifi_login_enabled,
             createdAt: employee.createdAt
         };
 

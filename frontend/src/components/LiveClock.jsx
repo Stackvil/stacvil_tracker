@@ -6,6 +6,8 @@ import { AuthContext } from '../context/AuthContext';
 const LiveClock = () => {
     const { user, logout, isOnWifi } = useContext(AuthContext);
     const isStaff = user && user.role !== 'admin' && user.emp_no !== 'ADMIN001';
+    const isWifiExempt = user?.is_wifi_login_enabled === false;
+    const effectiveIsOnWifi = isWifiExempt || isOnWifi;
     
     // Read cached duration to avoid resetting to 0s on page refresh
     const getCachedDuration = () => {
@@ -100,7 +102,7 @@ const LiveClock = () => {
             // 3. Update Work Duration
             if (isStaff) {
                 setWorkDuration(prev => {
-                    if (isOnWifi && !user?.isRestricted) {
+                    if (effectiveIsOnWifi && !user?.isRestricted) {
                         const nextVal = prev + deltaSec;
                         if (user?.emp_no && Math.floor(nextVal) % 5 === 0) {
                             sessionStorage.setItem(`work_duration_${user.emp_no}`, String(nextVal));
@@ -118,7 +120,7 @@ const LiveClock = () => {
             clearInterval(clockInterval);
             clearInterval(syncInterval);
         };
-    }, [user?.role, user?.emp_no, isOnWifi, user?.isRestricted]);
+    }, [user?.role, user?.emp_no, isOnWifi, user?.isRestricted, user?.is_wifi_login_enabled]);
 
     const formatDuration = (totalSeconds) => {
         const hours = Math.floor(totalSeconds / 3600);
@@ -142,16 +144,16 @@ const LiveClock = () => {
             </div>
 
             {isStaff && (
-                <div className={`flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md border min-w-0 transition-colors ${isOnWifi && !user?.isRestricted ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
+                <div className={`flex items-center gap-1.5 sm:gap-3 px-2 sm:px-4 py-1.5 sm:py-2 rounded-xl shadow-md border min-w-0 transition-colors ${effectiveIsOnWifi && !user?.isRestricted ? 'bg-green-50 border-green-200' : 'bg-red-50 border-red-200'}`}>
                     <div className="flex flex-col min-w-0">
-                        <span className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest leading-none mb-0.5 sm:mb-1 truncate ${isOnWifi && !user?.isRestricted ? 'text-green-600' : 'text-red-500'}`}>
-                            {isOnWifi ? (user?.isRestricted ? 'Restricted' : 'Work Duration') : 'Disconnected'}
+                        <span className={`text-[8px] sm:text-[10px] font-bold uppercase tracking-widest leading-none mb-0.5 sm:mb-1 truncate ${effectiveIsOnWifi && !user?.isRestricted ? 'text-green-600' : 'text-red-500'}`}>
+                            {effectiveIsOnWifi ? (user?.isRestricted ? 'Restricted' : 'Work Duration') : 'Disconnected'}
                         </span>
                         <div className="flex items-center gap-1.5">
-                            <span className={`text-sm sm:text-lg font-black font-mono leading-none tracking-tighter truncate ${isOnWifi && !user?.isRestricted ? 'text-green-900' : 'text-red-900'}`}>
+                            <span className={`text-sm sm:text-lg font-black font-mono leading-none tracking-tighter truncate ${effectiveIsOnWifi && !user?.isRestricted ? 'text-green-900' : 'text-red-900'}`}>
                                 {formatDuration(workDuration)}
                             </span>
-                            {!isOnWifi && <WifiOff className="w-3 h-3 sm:w-4 sm:h-4 text-red-500 animate-pulse" />}
+                            {!effectiveIsOnWifi && <WifiOff className="w-3 h-3 sm:w-4 sm:h-4 text-red-500 animate-pulse" />}
                         </div>
                     </div>
                 </div>

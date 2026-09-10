@@ -48,7 +48,11 @@ export const AuthProvider = ({ children }) => {
                     const response = await api.post('/utils/heartbeat', { wifi_ssid: currentSsid });
                     
                     if (response.data) {
-                        setIsOnWifi(response.data.is_on_wifi);
+                        const isExempt = response.data.is_wifi_login_enabled === false || user.is_wifi_login_enabled === false;
+                        setIsOnWifi(isExempt ? true : !!response.data.is_on_wifi);
+                        if (response.data.is_wifi_login_enabled !== undefined && user.is_wifi_login_enabled !== response.data.is_wifi_login_enabled) {
+                            updateUser({ is_wifi_login_enabled: response.data.is_wifi_login_enabled });
+                        }
                     }
                 } catch (err) {
                     console.error('Heartbeat failed:', err);
@@ -76,6 +80,15 @@ export const AuthProvider = ({ children }) => {
             newSocket.on('force_logout', (data) => {
                 alert(data.message);
                 logout();
+            });
+
+            newSocket.on('employee_updated', (data) => {
+                if (data && data.is_wifi_login_enabled !== undefined) {
+                    updateUser({ is_wifi_login_enabled: data.is_wifi_login_enabled });
+                    if (data.is_wifi_login_enabled === false) {
+                        setIsOnWifi(true);
+                    }
+                }
             });
         }
 

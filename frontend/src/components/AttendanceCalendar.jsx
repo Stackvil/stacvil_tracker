@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useContext } from 'react';
 import {
     Clock, Calendar as CalendarIcon, ChevronLeft, ChevronRight,
     Coffee, AlertCircle
@@ -8,8 +8,10 @@ import {
     endOfWeek, eachDayOfInterval, isSameDay,
     isSameMonth, addMonths, subMonths, isToday
 } from 'date-fns';
+import { AuthContext } from '../context/AuthContext';
 
 const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] }) => {
+    const { user } = useContext(AuthContext);
     const [currentMonth, setCurrentMonth] = useState(new Date());
     const [selectedDate, setSelectedDate] = useState(new Date());
 
@@ -270,6 +272,7 @@ const AttendanceCalendar = ({ attendanceHistory = [], tasks = [], leaves = [] })
 
                                         {/* WiFi Disconnection Alert */}
                                         {(() => {
+                                            if (user?.is_wifi_login_enabled === false) return null;
                                             const history = record.wifi_history || [];
                                             const disconnections = [];
                                             let totalDisconnectedMs = 0;
