@@ -6,7 +6,8 @@
     "scripts": {
         "start": "node backend/server.js",
         "build": "cd frontend && npm install && npm run build",
-        "backend-install": "cd backend && npm install"
+        "backend-install": "cd backend && npm install",
+        "tunnel:ngrok": "start-ngrok.bat"
     },
     "keywords": [],
     "author": "",
